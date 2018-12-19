@@ -1,23 +1,35 @@
 # Requires Python 3.5+
 # Requires mp3-tagger library ("pip3 install mp3-tagger" or download from here: https://pypi.org/project/mp3-tagger/)
+# -*- cod
+# xing:Utf-8 -*-
 
 import os
 import glob
 
 from mp3_tagger import MP3File
-from mp3_tagger.id3 import VERSION_2, VERSION_BOTH
+from mp3_tagger.id3 import VERSION_2, VERSION_BOTH, VERSION_1
 
 #PATH = "/home/apulai/mp3"
 #PATH = "Z:\\"
 #PATH = "Z:\\Greatest Hits of the 80's 8CD 320KB 2Lions-Team\\Greatest Hits Of The 80's CD6"
 #PATH = "c:\\test"
-PATH="Z:\\juca"
+#PATH="Z:\\juca"
+#PATH="Z:\\mp3\\shrek"
+#PATH="Z:\\mp3\\_Magyar"
+#PATH="Z:\\mp3\\_Latin"
+#PATH="Z:\\mp3\\_Gyerek"
+#PATH="Z:\\mp3\\_Country"
+PATH="Z:\\mp3\\_Disco"
+#PATH="/mnt/backupdsk/mp3/_Magyar"
 
 EXTENSION = ".mp3"
 PROCESSED_DIR_FILE = PATH + "/processed.log"
 
 
 rootDir = PATH
+report_inconsisent_directories = 1
+update_mp3data = 1
+
 
 def collect_mp3info(dir):
     """
@@ -28,24 +40,61 @@ def collect_mp3info(dir):
                 might retrun an empty list
 
     """
+    print("Function: collect_mp3info")
     retval = list();
     fileList = glob.glob(dir+"/*"+EXTENSION, recursive=False)
-    print("collect_mp3info")
     #print(dir),
     #print(fileList),
     for file in fileList:
-        print('file %s' % file)
+        #print('file %s' % file)
         print(".",end=""),
         d = dict()
-        mp3 = MP3File(file)
-        mp3.set_version(VERSION_2)  # we just want to get the v2 tags
-        d["artist"]=mp3.artist
-        d["album"]=mp3.album
-        d["song"]=mp3.song
-        d["band"]=mp3.band
-        d["folder"]=dir
-        d["filename"]=file
-        retval.append(d)
+        try:
+            mp3 = MP3File(file)
+
+            mp3.set_version(VERSION_2)  # we just want to get the v2 tags
+            if( mp3.artist == []):      # But if v2 tag is empty, let's try v1 tag instead
+                mp3.set_version(VERSION_1)
+            if( not(mp3.artist is None)):#Sometimes valuetype was NoneType, this checks for it
+                d["artist"]=(mp3.artist)
+            else:
+                d["artist"]="empty"
+
+            mp3.set_version(VERSION_2)  # we just want to get the v2 tags
+            if (mp3.album == []):       # But if v2 tag is empty, let's try v1 tag instead
+                mp3.set_version(VERSION_1)
+
+            if (not (mp3.album is None)):#Sometimes valuetype was NoneType, this checks for it
+                d["album"]=(mp3.album)
+            else:
+                d["album"] = "empty"
+
+            mp3.set_version(VERSION_2)  # we just want to get the v2 tags
+            if (mp3.song == []):        # But if v2 tag is empty, let's try v1 tag instead
+                mp3.set_version(VERSION_1)
+
+            if (not (mp3.song is None)): #Sometimes valuetype was NoneType, this checks for it
+                d["song"]=(mp3.song)
+            else:
+                d["song"] = "empty"
+
+            mp3.set_version(VERSION_2)  # we just want to get the v2 tags
+            if (mp3.band == []):        # But if v2 tag is empty, let's try v1 tag instead
+                mp3.set_version(VERSION_1)
+
+            if (not (mp3.band is None)): #Sometimes valuetype was NoneType, this checks for it
+                d["band"]=(mp3.band)
+            else:
+                d["band"]="empty"
+
+            d["folder"]=dir
+            d["filename"]=file
+            #d2=dict()
+            #for key,item in d.items():
+            #   d2[key]=item.encode("utf-8")
+            retval.append(d)
+        except Exception as e:
+            print("Warning: MP3 tag cannot be read from file: {}. Exception: {}".format(file, e))
     print ("")
     print (retval)
     return retval
@@ -54,8 +103,9 @@ def is_mp3info_consistent(mp3taglist):
     """
     function:	is_mp3info_consistent
     input:	    list of dictionaries with mp3 tags
-    output:	    True if album and band is the same
+    output:	    True if album, band and artist is the same
                 True if list is empty
+                False if all band, artist and album tag is empty
                 False in other cases
     operation:	takes the list's first element and compares subsequent entries
                 if there is a difference returns False
@@ -66,75 +116,115 @@ def is_mp3info_consistent(mp3taglist):
     #artist_consistent=True
     album_consistent=True
     band_consistent=True
+    artist_consistent=True
+    first_nonempty_album=False
+    first_nonempty_band=False
+    first_nonempty_artist=False
     # we will compare each song to the first song
     firstsong=mp3taglist[0]
 
     for song in mp3taglist:
-        #if( firstsong["artist"] != song["artist"]):
-        #    artist_consistent=False
-        #    print("Err: Artist inconsistent")
-        #    break
+        if ( song["album"] != ""):
+            first_nonempty_album = True
+        if ( song["band"] != []):
+            first_nonempty_band = True
+        if (song["artist"] != []):
+            first_nonempty_artist = True
+
+        if( firstsong["artist"] != song["artist"]):
+            artist_consistent = False
+            print("Err: Artist inconsistent")
+            break
         if( firstsong["album"] != song["album"]):
-            album_consistent=False
+            album_consistent = False
             print("Err: Album inconsistent")
             break
         if (firstsong["band"] != song["band"]):
             band_consistent = False
             print("Err: Band inconsistent")
             break
+        if (firstsong["artist"] != song["artist"]):
+            artist_consistent_consistent = False
+            print("Err: Artist inconsistent")
+            break
 
-    return ( album_consistent & band_consistent )
+    #return ( album_consistent & band_consistent )
+    if( first_nonempty_band == False ):
+        print("Band is empty!")
+    if (first_nonempty_album == False):
+        print("Album is empty!")
+    if (first_nonempty_artist == False):
+        print("Artist is empty!")
+    return ( album_consistent & band_consistent & artist_consistent & first_nonempty_album & first_nonempty_band & first_nonempty_artist)
 
 def suggest_mostfrequent_mp3info(songlist):
     """
     function:	suggest_mostfrequent_mp3info
     input:	    list of mp3 objects - songlist
-    output:	    band and album tuple
+    output:	    band, album, artist tuple
     operation:	looks into the mp3 objects, and calculates the
                 most frequent band and album string
                 returns band, album
     """
     albumlist = list()
     bandlist = list()
+    artistlist = list()
     for song in songlist:
         albumlist.append(song["album"])
         bandlist.append(song["band"])
+        artistlist.append(song["artist"])
 
     track = {}
     for value in albumlist:
-        if( value == [] ):
+        if( value == [] or (value is None) ):
             value = "empty"
         if value not in track:
             track[value] = 0
         else:
             track[value] += 1
     retvalalbum=max(track, key=track.get)
+    retvalalbumqty=track[retvalalbum]
 
     track = {}
     for value in bandlist:
-        if (value == []):
+        if (value == [] or(value is None)):
             value = "empty"
         if value not in track:
             track[value] = 0
         else:
             track[value] += 1
-
     retvalband = max(track, key=track.get)
+    retvalbandqty = track[retvalband]
+
+    track = {}
+    for value in artistlist:
+        if (value == [] or(value is None)):
+            value = "empty"
+        if value not in track:
+            track[value] = 0
+        else:
+            track[value] += 1
+    retvalartist = max(track, key=track.get)
+    retvalartistqty = track[retvalartist]
+
     print("Most frequent band: ", end="")
-    print(retvalband, end="")
-    print("\tMost frequent album: ", end="")
-    print(retvalalbum)
-    return retvalband,retvalalbum
+    print(retvalband, retvalbandqty)
+    print("Most frequent album: ", end="")
+    print(retvalalbum,retvalalbumqty)
+    print("Most frequent artist: ", end="")
+    print(retvalartist, retvalartistqty)
+
+    return retvalband,retvalalbum,retvalartist
 
 def update_mp3info(songlist, requiredtag):
     """
     function:	update_mp3info
     input:	    songlist a directory of mp3 tags, dictionary of required mp3
     output:
-    operation:	writes mp3tags into each song
+    operation:	writes mp3tags into each song, if tag == keep keeps tag (artist only)
     future:     updates processed dir logfile
     """
-    print("update_mp3info")
+    print("Function: update_mp3info")
     #print(dir),
     #print(fileList),
     for song in songlist:
@@ -145,16 +235,31 @@ def update_mp3info(songlist, requiredtag):
             needtosave=True
         if (song["song"] == ""):
             needtosave=True
+        if( song["artist"] != requiredtag["artist"] and requiredtag["artist"] != "keep" ):
+            needtosave=True
         if (needtosave==True):
-            mp3 = MP3File(song["filename"])
-            mp3.set_version(VERSION_BOTH)
-            mp3.band=requiredtag["band"]
-            mp3.album=requiredtag["album"]
-            if (song["song"] == ""):
-                mp3.song = file
-            print('Writing tags to %s' % song["filename"] )
-            mp3.save()
+            try:
+                mp3 = MP3File(song["filename"])
+                mp3.set_version(VERSION_BOTH)
+                mp3.band=requiredtag["band"]
+                mp3.album=requiredtag["album"]
+                if (song["song"] == ""):
+                    mp3.song = song["filename"]
+                if (requiredtag["artist"] != "keep"):
+                    mp3.artist=requiredtag["artist"]
+                #print('Writing tags to %s' % song["filename"] )
+                mp3.save()
+            except Exception as e:
+                print("Warning: MP3 tag cannot be saved for file: {}. Exception: {}".format(song["filename"], e))
+            else:
+                print("Info: MP3 tag updated for file: {}".format(song["filename"]))
 
+def writelogfile(str):
+    try:
+        with open(PROCESSED_DIR_FILE, "a") as f:
+            f.write(str)
+    except IOError:
+        print("Processed directories log file: {} cannot be opened.".format(PROCESSED_DIR_FILE))
 
 def walkdir(dir):
     """
@@ -169,25 +274,33 @@ def walkdir(dir):
     for dirName, subdirList, fileList in os.walk(dir):
         print('\nArrived in directory: %s' % dirName)
         songlist = collect_mp3info(dirName)
+
         # songlist maybe empty, in this case we skip info check
         if( len(songlist) > 0):
             if( is_mp3info_consistent(songlist)== False):
                 print("Album is INCONSISTENT")
-                suggestedband,suggestedalbum=suggest_mostfrequent_mp3info(songlist)
-                print("Suggested band: " + suggestedband + "\tSuggested album: " + suggestedalbum)
-                accept = input("Accept suggested (Y/n/q)?")
-                if accept.lower() == 'n':
-                    suggestedband = input("Enter new band: %s " % suggestedband) or suggestedband
-                    suggestedalbum = input("Enter new album: %s " % suggestedalbum) or suggestedalbum
-                    print("New values: Suggested band: " + suggestedband + "\tSuggested album: " + suggestedalbum)
-                if accept.lower() == 'q':
-                    exit(2)
-                d = dict ()
-                d["band"] = suggestedband
-                d["album"] = suggestedalbum
-                update_mp3info(songlist,d)
+                if( update_mp3data == 1):
+                    suggestedband,suggestedalbum,suggestedartist=suggest_mostfrequent_mp3info(songlist)
+                    print("Suggested band: " + suggestedband + "\tSuggested album: " + suggestedalbum + "\tSuggested artist: " + suggestedartist)
+                    accept = input("Accept suggested (Y/n/q)?")
+                    if accept.lower() == 'n':
+                        suggestedband = input("Enter new band: %s " % suggestedband) or suggestedband
+                        suggestedalbum = input("Enter new album: %s " % suggestedalbum) or suggestedalbum
+                        suggestedartist = input("Enter new artist (or keep or blank) %s" % suggestedartist) or suggestedartist
+                        print("New values: Suggested band: " + suggestedband + "\tSuggested album: " + suggestedalbum + "\tSuggested artist: " + suggestedartist)
+                    if accept.lower() == 'q':
+                        exit(2)
+                    d = dict ()
+                    d["band"] = suggestedband
+                    d["album"] = suggestedalbum
+                    d["artist"] = suggestedartist
+                    update_mp3info(songlist,d)
+                if( report_inconsisent_directories == 1):
+                    writelogfile("Inconsistent:" + dirName + "\n")
+
             else:
                 print("Album seems to be OK")
+                writelogfile("Consistent:" + dirName + "\n")
         if( len(subdirList) == 0):
             print("No subdirs")
         else:
