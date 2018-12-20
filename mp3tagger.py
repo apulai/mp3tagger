@@ -256,7 +256,7 @@ def update_mp3info(songlist, requiredtag):
     #print(dir),
     #print(fileList),
     for song in songlist:
-        needtosave=False;
+        needtosave=False
         if( song["album"] != requiredtag["album"]):
             needtosave=True
         if( song["band"] != requiredtag["band"]):
