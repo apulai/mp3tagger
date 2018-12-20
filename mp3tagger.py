@@ -24,7 +24,7 @@ PATH="Z:\\mp3\\_Magyar"
 
 EXTENSION = ".mp3"
 
-#TODO: Skip directories marked as consistent in the processed.log file (likely load proccessed log before run
+# TODO: Skip directories marked as consistent in the processed.log file (likely load proccessed log before run
 PROCESSED_DIR_FILE = PATH + "/processed.log"
 
 
@@ -32,7 +32,7 @@ rootDir = PATH
 report_inconsisent_directories = 1
 update_mp3data = 1
 
-#TODO: sync v1 and v2 tags
+# TODO: sync v1 and v2 tags
 
 
 def collect_mp3info(dir):
