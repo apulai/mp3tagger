@@ -34,6 +34,7 @@ update_mp3data = 1
 
 #TODO: sync v1 and v2 tags
 
+
 def collect_mp3info(dir):
     """
     function:	collect-mp3info
@@ -55,7 +56,6 @@ def collect_mp3info(dir):
         # print("file: {0} dir:{1}".format(file,dir))
         # print("file: {0} dir:{1} file: {0}".format(file,dir))
 
-
         print(".", end="")
         d = dict()
         try:
@@ -66,7 +66,6 @@ def collect_mp3info(dir):
                 mp3.set_version(VERSION_1)
 
             # TODO: replace empty to ""
-            # TODO: strip string (remove spaces) (.rstrip())
             if(mp3.artist is not None):#Sometimes valuetype was NoneType, this checks for it
                 d["artist"] = mp3.artist.rstrip()
             else:
