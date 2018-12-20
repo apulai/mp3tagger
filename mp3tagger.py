@@ -1,13 +1,13 @@
 # Requires Python 3.5+
 # Requires mp3-tagger library ("pip3 install mp3-tagger" or download from here: https://pypi.org/project/mp3-tagger/)
-# -*- cod
-# xing:Utf-8 -*-
+# nem kell -*- coding:Utf-8 -*-
 
 import os
 import glob
-
+import json
 from mp3_tagger import MP3File
 from mp3_tagger.id3 import VERSION_2, VERSION_BOTH, VERSION_1
+
 
 #PATH = "/home/apulai/mp3"
 #PATH = "Z:\\"
@@ -15,14 +15,16 @@ from mp3_tagger.id3 import VERSION_2, VERSION_BOTH, VERSION_1
 #PATH = "c:\\test"
 #PATH="Z:\\juca"
 #PATH="Z:\\mp3\\shrek"
-#PATH="Z:\\mp3\\_Magyar"
+PATH="Z:\\mp3\\_Magyar"
 #PATH="Z:\\mp3\\_Latin"
 #PATH="Z:\\mp3\\_Gyerek"
 #PATH="Z:\\mp3\\_Country"
-PATH="Z:\\mp3\\_Disco"
+#PATH="Z:\\mp3\\_Disco"
 #PATH="/mnt/backupdsk/mp3/_Magyar"
 
 EXTENSION = ".mp3"
+
+#TODO: Skip directories marked as consistent in the processed.log file (likely load proccessed log before run
 PROCESSED_DIR_FILE = PATH + "/processed.log"
 
 
@@ -30,6 +32,7 @@ rootDir = PATH
 report_inconsisent_directories = 1
 update_mp3data = 1
 
+#TODO: sync v1 and v2 tags
 
 def collect_mp3info(dir):
     """
@@ -37,35 +40,44 @@ def collect_mp3info(dir):
     input:	    foldername
     output:	    list of dictionaries containing mp3 tags per song
     operation:	opens each mp3 files, and extracts mp3 info into a list of dictionaries.
-                might retrun an empty list
+                might return an empty list
 
     """
     print("Function: collect_mp3info")
-    retval = list();
-    fileList = glob.glob(dir+"/*"+EXTENSION, recursive=False)
-    #print(dir),
-    #print(fileList),
-    for file in fileList:
-        #print('file %s' % file)
-        print(".",end=""),
+    return_value = list()
+    file_list = glob.glob(dir+"/*"+EXTENSION, recursive=False)
+    # print(dir),
+    # print(file_list),
+    for file in file_list:
+        # print("file:", file)
+        # print("file: " + file)
+        # print("file: {} dir:{}".format(file,dir))
+        # print("file: {0} dir:{1}".format(file,dir))
+        # print("file: {0} dir:{1} file: {0}".format(file,dir))
+
+
+        print(".", end="")
         d = dict()
         try:
             mp3 = MP3File(file)
 
             mp3.set_version(VERSION_2)  # we just want to get the v2 tags
-            if( mp3.artist == []):      # But if v2 tag is empty, let's try v1 tag instead
+            if(mp3.artist == []):      # But if v2 tag is empty, let's try v1 tag instead
                 mp3.set_version(VERSION_1)
-            if( not(mp3.artist is None)):#Sometimes valuetype was NoneType, this checks for it
-                d["artist"]=(mp3.artist)
+
+            # TODO: replace empty to ""
+            # TODO: strip string (remove spaces) (.rstrip())
+            if(mp3.artist is not None):#Sometimes valuetype was NoneType, this checks for it
+                d["artist"] = mp3.artist.rstrip()
             else:
-                d["artist"]="empty"
+                d["artist"] = "empty"
 
             mp3.set_version(VERSION_2)  # we just want to get the v2 tags
             if (mp3.album == []):       # But if v2 tag is empty, let's try v1 tag instead
                 mp3.set_version(VERSION_1)
 
-            if (not (mp3.album is None)):#Sometimes valuetype was NoneType, this checks for it
-                d["album"]=(mp3.album)
+            if (mp3.album is not None):#Sometimes valuetype was NoneType, this checks for it
+                d["album"] = mp3.album.rstrip()
             else:
                 d["album"] = "empty"
 
@@ -73,8 +85,8 @@ def collect_mp3info(dir):
             if (mp3.song == []):        # But if v2 tag is empty, let's try v1 tag instead
                 mp3.set_version(VERSION_1)
 
-            if (not (mp3.song is None)): #Sometimes valuetype was NoneType, this checks for it
-                d["song"]=(mp3.song)
+            if (mp3.song is not None): #Sometimes valuetype was NoneType, this checks for it
+                d["song"] = mp3.song.rstrip()
             else:
                 d["song"] = "empty"
 
@@ -82,22 +94,32 @@ def collect_mp3info(dir):
             if (mp3.band == []):        # But if v2 tag is empty, let's try v1 tag instead
                 mp3.set_version(VERSION_1)
 
-            if (not (mp3.band is None)): #Sometimes valuetype was NoneType, this checks for it
-                d["band"]=(mp3.band)
+            if (mp3.band is not None): #Sometimes valuetype was NoneType, this checks for it
+                d["band"] = mp3.band.rstrip()
             else:
-                d["band"]="empty"
+                d["band"] = "empty"
 
-            d["folder"]=dir
-            d["filename"]=file
+            #TODO: doublecheck if "folder" is needed at all
+            d["folder"] = dir
+            d["filename"] = file
+
+            #TODO: on my raspberry pi there was a problem with UTF-8 coding, but this did not help
             #d2=dict()
             #for key,item in d.items():
             #   d2[key]=item.encode("utf-8")
-            retval.append(d)
+
+            return_value.append(d)
         except Exception as e:
             print("Warning: MP3 tag cannot be read from file: {}. Exception: {}".format(file, e))
     print ("")
-    print (retval)
-    return retval
+
+    for song in return_value:
+        # TODO: Patrik to make it UTF-8 ready!!!
+        print(json.dumps(song, indent=4))
+        print (song)
+
+    #print (return_value)
+    return return_value
 
 def is_mp3info_consistent(mp3taglist):
     """
@@ -187,7 +209,7 @@ def suggest_mostfrequent_mp3info(songlist):
 
     track = {}
     for value in bandlist:
-        if (value == [] or(value is None)):
+        if (value == [] or (value is None)):
             value = "empty"
         if value not in track:
             track[value] = 0
@@ -207,6 +229,9 @@ def suggest_mostfrequent_mp3info(songlist):
     retvalartist = max(track, key=track.get)
     retvalartistqty = track[retvalartist]
 
+#TODO: If band is empty propose artist as band
+#TODO: If all_artist is only once: propose keep to keep them
+
     print("Most frequent band: ", end="")
     print(retvalband, retvalbandqty)
     print("Most frequent album: ", end="")
@@ -224,6 +249,9 @@ def update_mp3info(songlist, requiredtag):
     operation:	writes mp3tags into each song, if tag == keep keeps tag (artist only)
     future:     updates processed dir logfile
     """
+
+    #TODO: add album cover!
+
     print("Function: update_mp3info")
     #print(dir),
     #print(fileList),
@@ -243,8 +271,10 @@ def update_mp3info(songlist, requiredtag):
                 mp3.set_version(VERSION_BOTH)
                 mp3.band=requiredtag["band"]
                 mp3.album=requiredtag["album"]
+                # TODO: do not insert the full filename if empty, only the part before the mp3 (Patrik)
                 if (song["song"] == ""):
-                    mp3.song = song["filename"]
+                    # My TC friend is totally bored sometimes somewhere so he learns stuff like [:-4]
+                    mp3.song = os.path.basename(song["filename"])[:-4]
                 if (requiredtag["artist"] != "keep"):
                     mp3.artist=requiredtag["artist"]
                 #print('Writing tags to %s' % song["filename"] )
@@ -252,6 +282,7 @@ def update_mp3info(songlist, requiredtag):
             except Exception as e:
                 print("Warning: MP3 tag cannot be saved for file: {}. Exception: {}".format(song["filename"], e))
             else:
+                #TODO: update processed.log as directory now consistent
                 print("Info: MP3 tag updated for file: {}".format(song["filename"]))
 
 def writelogfile(str):
@@ -305,12 +336,12 @@ def walkdir(dir):
             print("No subdirs")
         else:
             for dname in subdirList:
-                print("Going to: %s" % dname)
+                print("Going to: {}".format(dname))
                 walkdir(dname)
-        print("Directroy processed: " + dirName)
-
-
-walkdir(PATH)
+        print("Directroy processed: {}".format(dirName))
 
 
 
+if __name__ == "__main__":
+    walkdir(PATH)
+    #collect_mp3info("D:\\temp\\mp3\\Alma Együttes - Bio (2006)")
