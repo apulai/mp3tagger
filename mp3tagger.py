@@ -29,13 +29,13 @@ PROCESSED_DIR_FILE = PATH + "/processed.log"
 
 
 rootDir = PATH
-report_inconsisent_directories = 1
+report_inconsistent_directories = 1
 update_mp3data = 1
 
 # TODO: sync v1 and v2 tags
 
 
-def collect_mp3info(dir):
+def collect_mp3info(directory):
     """
     function:	collect-mp3info
     input:	    foldername
@@ -45,138 +45,128 @@ def collect_mp3info(dir):
 
     """
     print("Function: collect_mp3info")
-    return_value = list()
-    file_list = glob.glob(dir+"/*"+EXTENSION, recursive=False)
-    # print(dir),
+    songs_list = list()
+    file_list = glob.glob(directory + "/*" + EXTENSION, recursive=False)
+    # print(directory),
     # print(file_list),
     for file in file_list:
         # print("file:", file)
         # print("file: " + file)
-        # print("file: {} dir:{}".format(file,dir))
-        # print("file: {0} dir:{1}".format(file,dir))
-        # print("file: {0} dir:{1} file: {0}".format(file,dir))
+        # print("file: {} directory:{}".format(file,directory))
+        # print("file: {0} directory:{1}".format(file,directory))
+        # print("file: {0} directory:{1} file: {0}".format(file,directory))
 
         print(".", end="")
         d = dict()
         try:
             mp3 = MP3File(file)
-
-            mp3.set_version(VERSION_2)  # we just want to get the v2 tags
-            if(mp3.artist == []):      # But if v2 tag is empty, let's try v1 tag instead
-                mp3.set_version(VERSION_1)
-
-            # TODO: replace empty to ""
-            if(mp3.artist is not None):#Sometimes valuetype was NoneType, this checks for it
-                d["artist"] = mp3.artist.rstrip()
-            else:
-                d["artist"] = "empty"
-
-            mp3.set_version(VERSION_2)  # we just want to get the v2 tags
-            if (mp3.album == []):       # But if v2 tag is empty, let's try v1 tag instead
-                mp3.set_version(VERSION_1)
-
-            if (mp3.album is not None):#Sometimes valuetype was NoneType, this checks for it
-                d["album"] = mp3.album.rstrip()
-            else:
-                d["album"] = "empty"
-
-            mp3.set_version(VERSION_2)  # we just want to get the v2 tags
-            if (mp3.song == []):        # But if v2 tag is empty, let's try v1 tag instead
-                mp3.set_version(VERSION_1)
-
-            if (mp3.song is not None): #Sometimes valuetype was NoneType, this checks for it
-                d["song"] = mp3.song.rstrip()
-            else:
-                d["song"] = "empty"
-
-            mp3.set_version(VERSION_2)  # we just want to get the v2 tags
-            if (mp3.band == []):        # But if v2 tag is empty, let's try v1 tag instead
-                mp3.set_version(VERSION_1)
-
-            if (mp3.band is not None): #Sometimes valuetype was NoneType, this checks for it
-                d["band"] = mp3.band.rstrip()
-            else:
-                d["band"] = "empty"
-
-            #TODO: doublecheck if "folder" is needed at all
-            d["folder"] = dir
-            d["filename"] = file
-
-            #TODO: on my raspberry pi there was a problem with UTF-8 coding, but this did not help
-            #d2=dict()
-            #for key,item in d.items():
-            #   d2[key]=item.encode("utf-8")
-
-            return_value.append(d)
         except Exception as e:
             print("Warning: MP3 tag cannot be read from file: {}. Exception: {}".format(file, e))
-    print ("")
 
-    for song in return_value:
-        # TODO: Patrik to make it UTF-8 ready!!!
-        print(json.dumps(song, indent=4))
-        print (song)
+        mp3.set_version(VERSION_2)  # we just want to get the v2 tags
+        if len(mp3.artist) == 0:      # But if v2 tag is empty, let's try v1 tag instead
+            mp3.set_version(VERSION_1)
+        if isinstance(mp3.artist, str):   # If it's a string we are good...
+            d["artist"] = mp3.artist.rstrip()
+        else:
+            d["artist"] = ""
 
-    #print (return_value)
-    return return_value
+        mp3.set_version(VERSION_2)  # we just want to get the v2 tags
+        if len(mp3.album) == 0:       # But if v2 tag is empty, let's try v1 tag instead
+            mp3.set_version(VERSION_1)
+        if isinstance(mp3.album, str):   # If it's a string we are good...
+            d["album"] = mp3.album.rstrip()
+        else:
+            d["album"] = ""
 
-def is_mp3info_consistent(mp3taglist):
+        mp3.set_version(VERSION_2)  # we just want to get the v2 tags
+        if len(mp3.song) == 0:        # But if v2 tag is empty, let's try v1 tag instead
+            mp3.set_version(VERSION_1)
+        if isinstance(mp3.song, str):   # If it's a string we are good...
+            d["song"] = mp3.song.rstrip()
+        else:
+            d["song"] = ""
+
+        mp3.set_version(VERSION_2)  # we just want to get the v2 tags
+        if len(mp3.band) == 0:        # But if v2 tag is empty, let's try v1 tag instead
+            mp3.set_version(VERSION_1)
+        if isinstance(mp3.band, str):   # If it's a string we are good...
+            d["band"] = mp3.band.rstrip()
+        else:
+            d["band"] = ""
+
+        # TODO: doublecheck if "folder" is needed at all
+        # d["folder"] = directory   # Patrik: It's not required as os.path.basedir(d["filename]) can generate it
+        d["filename"] = file
+
+        # TODO: on my raspberry pi there was a problem with UTF-8 coding, but this did not help
+        #d2=dict()
+        #for key,item in d.items():
+        #   d2[key]=item.encode("utf-8")
+
+        songs_list.append(d)
+    print("")
+    print(json.dumps(songs_list, indent=4, ensure_ascii=False))
+
+    return songs_list
+
+
+def is_mp3info_consistent(songs_list):
     """
     function:	is_mp3info_consistent
     input:	    list of dictionaries with mp3 tags
-    output:	    True if album, band and artist is the same
+    output:	    True if album, band and artist are the same for all songs
                 True if list is empty
-                False if all band, artist and album tag is empty
+                False if all band, artist and album tags are empty
                 False in other cases
     operation:	takes the list's first element and compares subsequent entries
                 if there is a difference returns False
     """
     # if we got an empty list as input, we will return
-    if( len(mp3taglist) == 0):
+    if len(songs_list) == 0:
         return True
-    #artist_consistent=True
-    album_consistent=True
-    band_consistent=True
-    artist_consistent=True
-    first_nonempty_album=False
-    first_nonempty_band=False
-    first_nonempty_artist=False
+    # artist_consistent = True
+    album_consistent = True
+    band_consistent = True
+    artist_consistent = True
+    first_nonempty_album = False
+    first_nonempty_band = False
+    first_nonempty_artist = False
     # we will compare each song to the first song
-    firstsong=mp3taglist[0]
+    first_song = songs_list[0]
 
-    for song in mp3taglist:
-        if ( song["album"] != ""):
+    for song in songs_list[1:]:     # We don't need to compare the first song to first_song one as well [1:]
+        if song["album"] != "":
             first_nonempty_album = True
-        if ( song["band"] != []):
+        if song["band"] != "":
             first_nonempty_band = True
-        if (song["artist"] != []):
+        if song["artist"] != "":
             first_nonempty_artist = True
 
-        if( firstsong["artist"] != song["artist"]):
+        if first_song["artist"] != song["artist"]:
             artist_consistent = False
             print("Err: Artist inconsistent")
             break
-        if( firstsong["album"] != song["album"]):
+        if first_song["album"] != song["album"]:
             album_consistent = False
             print("Err: Album inconsistent")
             break
-        if (firstsong["band"] != song["band"]):
+        if first_song["band"] != song["band"]:
             band_consistent = False
             print("Err: Band inconsistent")
             break
-        if (firstsong["artist"] != song["artist"]):
-            artist_consistent_consistent = False
-            print("Err: Artist inconsistent")
-            break
 
     #return ( album_consistent & band_consistent )
-    if( first_nonempty_band == False ):
-        print("Band is empty!")
-    if (first_nonempty_album == False):
-        print("Album is empty!")
-    if (first_nonempty_artist == False):
-        print("Artist is empty!")
-    return ( album_consistent & band_consistent & artist_consistent & first_nonempty_album & first_nonempty_band & first_nonempty_artist)
+    # TODO: not sure what this is below.... Do we need it?
+    if not first_nonempty_band:
+        print("Band is empty for all songs!")
+    if not first_nonempty_album:
+        print("Album is empty for all songs!")
+    if not first_nonempty_artist:
+        print("Artist is empty! for all songs")
+    return album_consistent and band_consistent and artist_consistent and first_nonempty_album and \
+        first_nonempty_band and first_nonempty_artist
+
 
 def suggest_mostfrequent_mp3info(songlist):
     """
@@ -240,6 +230,7 @@ def suggest_mostfrequent_mp3info(songlist):
 
     return retvalband,retvalalbum,retvalartist
 
+
 def update_mp3info(songlist, requiredtag):
     """
     function:	update_mp3info
@@ -249,7 +240,7 @@ def update_mp3info(songlist, requiredtag):
     future:     updates processed dir logfile
     """
 
-    #TODO: add album cover!
+    # TODO: add album cover!
 
     print("Function: update_mp3info")
     #print(dir),
@@ -270,8 +261,7 @@ def update_mp3info(songlist, requiredtag):
                 mp3.set_version(VERSION_BOTH)
                 mp3.band=requiredtag["band"]
                 mp3.album=requiredtag["album"]
-                # TODO: do not insert the full filename if empty, only the part before the mp3 (Patrik)
-                if (song["song"] == ""):
+                if song["song"] == "":
                     # My TC friend is totally bored sometimes somewhere so he learns stuff like [:-4]
                     mp3.song = os.path.basename(song["filename"])[:-4]
                 if (requiredtag["artist"] != "keep"):
@@ -284,12 +274,14 @@ def update_mp3info(songlist, requiredtag):
                 #TODO: update processed.log as directory now consistent
                 print("Info: MP3 tag updated for file: {}".format(song["filename"]))
 
+
 def writelogfile(str):
     try:
         with open(PROCESSED_DIR_FILE, "a") as f:
             f.write(str)
     except IOError:
         print("Processed directories log file: {} cannot be opened.".format(PROCESSED_DIR_FILE))
+
 
 def walkdir(dir):
     """
@@ -325,7 +317,7 @@ def walkdir(dir):
                     d["album"] = suggestedalbum
                     d["artist"] = suggestedartist
                     update_mp3info(songlist,d)
-                if( report_inconsisent_directories == 1):
+                if( report_inconsistent_directories == 1):
                     writelogfile("Inconsistent:" + dirName + "\n")
 
             else:
@@ -340,7 +332,7 @@ def walkdir(dir):
         print("Directroy processed: {}".format(dirName))
 
 
-
 if __name__ == "__main__":
-    walkdir(PATH)
-    #collect_mp3info("D:\\temp\\mp3\\Alma Együttes - Bio (2006)")
+    # walkdir(PATH)
+    song_list = collect_mp3info("C:\\tmp\\Music\\Parno Graszt\\Rávágok a zongorára")
+    print(is_mp3info_consistent(song_list))
