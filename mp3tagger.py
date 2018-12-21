@@ -425,15 +425,12 @@ def walkdir(dir):
                     # If we managed to refresh this directory,
                     # we log it as updated
                     processed_dirs.append(current_directory)
-                    #Try to update the log
-                    try:
-                        with open(PROCESSED_DIR_FILE, "a") as f:
-                            f.write(current_directory + '\n')
-                    except IOError:
-                        print("Processed directories log file: {} cannot be opened.".format(PROCESSED_DIR_FILE))
-                        exit(1)
+                    #TODO: Add a result into the logfile not only the directory
+                    #writelogfile("OK:\n")
                 else:
                     print("Directory was not processed OK (likely skipped)")
+                    #writelogfile ("Skip:\n")
+                writelogfile(current_directory + '\n')
             else:
                 print("Directory: {} was already processed.".format(current_directory))
             number_of_directories_found = number_of_directories_found - 1;
