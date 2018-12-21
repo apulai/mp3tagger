@@ -15,7 +15,9 @@ from mp3_tagger.id3 import VERSION_2, VERSION_BOTH, VERSION_1
 #PATH = "c:\\test"
 #PATH="Z:\\juca"
 #PATH="Z:\\mp3\\shrek"
+#PATH="Z:\\mp3\\_Magyar\\Groovehouse - Hajnal (2001)"
 PATH="Z:\\mp3\\_Magyar"
+#PATH="D:\\temp"
 #PATH="Z:\\mp3\\_Latin"
 #PATH="Z:\\mp3\\_Gyerek"
 #PATH="Z:\\mp3\\_Country"
@@ -44,7 +46,7 @@ def collect_mp3info(directory):
                 might return an empty list
 
     """
-    print("Function: collect_mp3info")
+    print("Function: collect_mp3info Directory {}".format(directory))
     songs_list = list()
     file_list = glob.glob(directory + "/*" + EXTENSION, recursive=False)
     # print(directory),
@@ -106,7 +108,7 @@ def collect_mp3info(directory):
 
         songs_list.append(d)
     print("")
-    print(json.dumps(songs_list, indent=4, ensure_ascii=False))
+    #print(json.dumps(songs_list, indent=4, ensure_ascii=False))
 
     return songs_list
 
@@ -135,7 +137,7 @@ def is_mp3info_consistent(songs_list):
     # we will compare each song to the first song
     first_song = songs_list[0]
 
-    for song in songs_list[1:]:     # We don't need to compare the first song to first_song one as well [1:]
+    for song in songs_list[1:]:     # We don't need to compare the first song to first_song one as well [1:] We can use 1: like operators on lists
         if song["album"] != "":
             first_nonempty_album = True
         if song["band"] != "":
@@ -156,14 +158,12 @@ def is_mp3info_consistent(songs_list):
             print("Err: Band inconsistent")
             break
 
-    #return ( album_consistent & band_consistent )
-    # TODO: not sure what this is below.... Do we need it?
     if not first_nonempty_band:
         print("Band is empty for all songs!")
     if not first_nonempty_album:
         print("Album is empty for all songs!")
     if not first_nonempty_artist:
-        print("Artist is empty! for all songs")
+        print("Artist is empty for all songs!")
     return album_consistent and band_consistent and artist_consistent and first_nonempty_album and \
         first_nonempty_band and first_nonempty_artist
 
@@ -221,12 +221,9 @@ def suggest_mostfrequent_mp3info(songlist):
 #TODO: If band is empty propose artist as band
 #TODO: If all_artist is only once: propose keep to keep them
 
-    print("Most frequent band: ", end="")
-    print(retvalband, retvalbandqty)
-    print("Most frequent album: ", end="")
-    print(retvalalbum,retvalalbumqty)
-    print("Most frequent artist: ", end="")
-    print(retvalartist, retvalartistqty)
+    print("Most frequent band:\t {} number of occurances {} .".format(retvalband,retvalbandqty))
+    print("Most frequent album:\t {} number of occurances {} .".format(retvalalbum,retvalalbumqty))
+    print("Most frequent artist:\t {} number of occurances {} . ".format(retvalartist, retvalartistqty))
 
     return retvalband,retvalalbum,retvalartist
 
@@ -283,9 +280,9 @@ def writelogfile(str):
         print("Processed directories log file: {} cannot be opened.".format(PROCESSED_DIR_FILE))
 
 
-def walkdir(dir):
+def walkdir_OBSOLETE(dir):
     """
-    function:	walkdir
+    function:	walkdir - OBSOLETE
     input:	    foldername
     output:	    none
     operation:	recureseivly walks through the directories
@@ -328,11 +325,119 @@ def walkdir(dir):
         else:
             for dname in subdirList:
                 print("Going to: {}".format(dname))
-                walkdir(dname)
+                walkdir_OBSOLETE(dname)
         print("Directroy processed: {}".format(dirName))
 
 
+def process_dir(current_directory):
+    """
+    function:	process_dir
+    input:	    foldername
+    output:	    0 if directory is updated
+                1 if directory is not updated
+    operation:	generates list of songs in current directory
+                collects mp3info
+                processes mp3info
+    """
+
+    song_list=collect_mp3info(current_directory)
+    if (len(song_list) > 0):
+        if (is_mp3info_consistent(song_list) == False):
+            print(json.dumps(song_list, indent=4, ensure_ascii=False))
+            print("Album is inconsistent")
+            if (update_mp3data == 1):
+                suggestedband, suggestedalbum, suggestedartist = suggest_mostfrequent_mp3info(song_list)
+                print(
+                    "Suggested band: " + suggestedband + "\tSuggested album: " + suggestedalbum + "\tSuggested artist: " + suggestedartist)
+                accept = input("Accept suggested (Y/n/q/s for skip)?")
+                if accept.lower() == 'n':
+                    suggestedband = input("Enter new band: %s " % suggestedband) or suggestedband
+                    suggestedalbum = input("Enter new album: %s " % suggestedalbum) or suggestedalbum
+                    suggestedartist = input(
+                        "Enter new artist (or keep or blank) %s" % suggestedartist) or suggestedartist
+                    print(
+                        "New values: Suggested band: " + suggestedband + "\tSuggested album: " + suggestedalbum + "\tSuggested artist: " + suggestedartist)
+                if accept.lower() == 'q':
+                    exit(2)
+                if accept.lower() != 's':
+                    d = dict()
+                    d["band"] = suggestedband
+                    d["album"] = suggestedalbum
+                    d["artist"] = suggestedartist
+                    update_mp3info(song_list, d)
+                else:
+                    print ("Skipping this directory")
+                    return 1
+        else:
+            print("Album is consistent")
+
+    return 0
+
+
+def walkdir(dir):
+    """
+        function:	walk
+        input:	    root folder name
+        output:	    none
+        operation:	generates list of directories
+                    processes each unprocessed directory
+                    logs processed directories
+        """
+
+    # List all directories
+    directories = glob.glob(PATH + '/**/*/', recursive=True)
+
+    #Debug if all directories are listed
+    #i = 1
+    #for p in directories:
+    #    print("{} {}".format(i,p))
+    #    i=i+1
+    #exit(1)
+    # But also add current directory
+
+    directories.append(dir)
+
+    #Will try to load the list of processed directories
+    #We will skip processed directories
+    try:
+        with open(PROCESSED_DIR_FILE) as f:
+            processed_dirs = f.read().splitlines()
+    except IOError:
+        print("Processed directories log file: {} cannot be opened.".format(PROCESSED_DIR_FILE))
+        processed_dirs = []
+    # print(processed_dirs)
+
+    current_directory = ''
+    first_file = True
+    first_file_in_dir = True
+    new = {}
+    for current_directory in directories:
+            # We are in a new directory
+            if current_directory not in processed_dirs:
+                print("Processing dir: {}".format(current_directory))
+                if process_dir(current_directory) == 0:
+                    # If we managed to refresh this directory,
+                    # we log it as updated
+                    processed_dirs.append(current_directory)
+                    #Try to update the log
+                    try:
+                        with open(PROCESSED_DIR_FILE, "a") as f:
+                            f.write(current_directory + '\n')
+                    except IOError:
+                        print("Processed directories log file: {} cannot be opened.".format(PROCESSED_DIR_FILE))
+                        exit(1)
+                else:
+                    print("Directory was not processed OK (likely skipped)")
+            else:
+                print("Directory: {} was already processed.".format(current_directory))
+
+
 if __name__ == "__main__":
-    # walkdir(PATH)
-    song_list = collect_mp3info("C:\\tmp\\Music\\Parno Graszt\\Rávágok a zongorára")
+    walkdir(PATH)
+    exit(0)
+
+    #Test cases
+    song_list = collect_mp3info("D:\\temp\\mp3\\Alma Együttes - Bio (2006)")
     print(is_mp3info_consistent(song_list))
+    suggestedband, suggestedalbum, suggestedartist = suggest_mostfrequent_mp3info(song_list)
+    print(suggestedband, suggestedalbum, suggestedartist)
