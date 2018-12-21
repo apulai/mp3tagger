@@ -16,19 +16,21 @@ from mp3_tagger.id3 import VERSION_2, VERSION_BOTH, VERSION_1
 #PATH="Z:\\juca"
 #PATH="Z:\\mp3\\shrek"
 #PATH="Z:\\mp3\\_Magyar\\Groovehouse - Hajnal (2001)"
-PATH="Z:\\mp3\\_Magyar"
+#PATH="Z:\\mp3\\_Magyar"
 #PATH="D:\\temp"
 #PATH="Z:\\mp3\\_Latin"
 #PATH="Z:\\mp3\\_Gyerek"
 #PATH="Z:\\mp3\\_Country"
 #PATH="Z:\\mp3\\_Disco"
 #PATH="/mnt/backupdsk/mp3/_Magyar"
+PATH="Z:\\mp3\\_Magyar\\EmilRulez-HelloT"
 
+#TODO: Where MP3 is capital it is simply skipped on Linux
 EXTENSION = ".mp3"
 
 # TODO: Skip directories marked as consistent in the processed.log file (likely load proccessed log before run
+#PROCESSED_DIR_FILE = PATH + "/uxprocessed.log"
 PROCESSED_DIR_FILE = PATH + "/processed.log"
-
 
 rootDir = PATH
 report_inconsistent_directories = 1
@@ -137,7 +139,9 @@ def is_mp3info_consistent(songs_list):
     # we will compare each song to the first song
     first_song = songs_list[0]
 
-    for song in songs_list[1:]:     # We don't need to compare the first song to first_song one as well [1:] We can use 1: like operators on lists
+    for song in songs_list:
+        # We don't need to compare the first song to first_song one as well [1:] We can use 1: like operators on lists
+        # But this is wrong what if we have only 1 song?!
         if song["album"] != "":
             first_nonempty_album = True
         if song["band"] != "":
@@ -397,6 +401,8 @@ def walkdir(dir):
 
     directories.append(dir)
 
+    number_of_directories_found = len(directories)
+    print("Found {} directories to scan".format(number_of_directories_found))
     #Will try to load the list of processed directories
     #We will skip processed directories
     try:
@@ -430,10 +436,13 @@ def walkdir(dir):
                     print("Directory was not processed OK (likely skipped)")
             else:
                 print("Directory: {} was already processed.".format(current_directory))
+            number_of_directories_found = number_of_directories_found - 1;
+            print("Number of directories to go {}".format(number_of_directories_found))
 
 
 if __name__ == "__main__":
     walkdir(PATH)
+
     exit(0)
 
     #Test cases
