@@ -32,8 +32,10 @@ PATH="Z:\\mp3\\_Country"
 EXTENSION = ".mp3"
 
 # TODO: Skip directories marked as consistent in the processed.log file (likely load proccessed log before run
+#LOGFILE_NAME = "uxprocessed.log"
+LOGFILE_NAME = "processed.log"
 #PROCESSED_DIR_FILE = PATH + "/uxprocessed.log"
-PROCESSED_DIR_FILE = PATH + "/processed.log"
+PROCESSED_DIR_FILE = PATH + "/" + LOGFILE_NAME
 
 rootDir = PATH
 report_inconsistent_directories = 1
@@ -463,8 +465,11 @@ def main(argv):
         elif opt in ("-d", "--dir"):
             glob.PATH = arg
         elif opt in ("-l", "--logdir"):
-            glob.PROCESSED_DIR_FILE = arg
-    print("Path {} Logdir {}".format(PATH,PROCESSED_DIR_FILE))
+            glob.LOGFILE_NAME = arg
+
+        glob.PROCESSED_DIR_FILE = glob.PATH + "/" + glob.LOGFILE_NAME
+
+    print("Path {} Logdir {} Concat {}".format(PATH,LOGFILE_NAME,PROCESSED_DIR_FILE))
     walkdir(PATH)
 
 if __name__ == "__main__":
