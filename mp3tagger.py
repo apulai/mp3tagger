@@ -456,6 +456,7 @@ def main(argv):
     global PATH
     global PROCESSED_DIR_FILE
     global LOGFILE_NAME
+
     try:
         opts, args = getopt.getopt(argv, "hd:l:",["dir=","log="])
     except getopt.GetoptError:
