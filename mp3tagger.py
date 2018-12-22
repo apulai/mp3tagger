@@ -70,53 +70,53 @@ def collect_mp3info(directory):
         d = dict()
         try:
             mp3 = MP3File(file)
+            mp3.set_version(VERSION_2)  # we just want to get the v2 tags
+            d["tagversion"]="v1"        # We hope tags will be v2, but let's set the worst case for us which is v1, if no v2 tags we will assume all was v1 and will not write
+
+            if isinstance(mp3.artist, str):     # If it's a string we are good...
+                if len(mp3.artist) == 0:        # But if v2 tag is empty, let's try v1 tag instead
+                    mp3.set_version(VERSION_1)  # So there was a non-zero v2 tag
+                else:
+                    d["tagversion"] = "v2"
+                d["artist"] = mp3.artist.rstrip()
+            else:
+                d["artist"] = ""
+
+            mp3.set_version(VERSION_2)          # we just want to get the v2 tags
+            if isinstance(mp3.album, str):      # If it's a string we are good...
+                if len(mp3.album) == 0:         # But if v2 tag is empty, let's try v1 tag instead
+                    mp3.set_version(VERSION_1)
+                else:
+                    d["tagversion"] = "v2"      # So there was a non-zero v2 tag
+                d["album"] = mp3.album.rstrip()
+            else:
+                d["album"] = ""
+
+            mp3.set_version(VERSION_2)          # we just want to get the v2 tags
+            if isinstance(mp3.song, str):       # If it's a string we are good...
+                if len(mp3.song) == 0:          # But if v2 tag is empty, let's try v1 tag instead
+                    mp3.set_version(VERSION_1)
+                else:
+                    d["tagversion"] = "v2"      # So there was a non-zero v2 tag
+                d["song"] = mp3.song.rstrip()
+            else:
+                d["song"] = ""
+
+            mp3.set_version(VERSION_2)          # we just want to get the v2 tags
+            if isinstance(mp3.band, str):       # If it's a string we are good...
+                if len(mp3.band) == 0:          # But if v2 tag is empty, let's try v1 tag instead
+                    mp3.set_version(VERSION_1)
+                else:
+                    d["tagversion"] = "v2"      # So there was a non-zero v2 tag
+                d["band"] = mp3.band.rstrip()
+            else:
+                d["band"] = ""
+
+            d["filename"] = file
+
+            songs_list.append(d)
         except Exception as e:
             print("Warning: MP3 tag cannot be read from file: {}. Exception: {}".format(file, e))
-
-        mp3.set_version(VERSION_2)  # we just want to get the v2 tags
-        d["tagversion"]="v1"        # We hope tags will be v2, but let's set the worst case for us which is v1, if no v2 tags we will assume all was v1 and will not write
-        if len(mp3.artist) == 0:            # But if v2 tag is empty, let's try v1 tag instead
-            mp3.set_version(VERSION_1)
-        else:
-            d["tagversion"] = "v2"          # So there was a non-zero v2 tag
-        if isinstance(mp3.artist, str):     # If it's a string we are good...
-            d["artist"] = mp3.artist.rstrip()
-        else:
-            d["artist"] = ""
-
-        mp3.set_version(VERSION_2)          # we just want to get the v2 tags
-        if len(mp3.album) == 0:             # But if v2 tag is empty, let's try v1 tag instead
-            mp3.set_version(VERSION_1)
-        else:
-            d["tagversion"] = "v2"          # So there was a non-zero v2 tag
-        if isinstance(mp3.album, str):      # If it's a string we are good...
-            d["album"] = mp3.album.rstrip()
-        else:
-            d["album"] = ""
-
-        mp3.set_version(VERSION_2)          # we just want to get the v2 tags
-        if len(mp3.song) == 0:              # But if v2 tag is empty, let's try v1 tag instead
-            mp3.set_version(VERSION_1)
-        else:
-            d["tagversion"] = "v2"          # So there was a non-zero v2 tag
-        if isinstance(mp3.song, str):       # If it's a string we are good...
-            d["song"] = mp3.song.rstrip()
-        else:
-            d["song"] = ""
-
-        mp3.set_version(VERSION_2)          # we just want to get the v2 tags
-        if len(mp3.band) == 0:              # But if v2 tag is empty, let's try v1 tag instead
-            mp3.set_version(VERSION_1)
-        else:
-            d["tagversion"] = "v2"          # So there was a non-zero v2 tag
-        if isinstance(mp3.band, str):       # If it's a string we are good...
-            d["band"] = mp3.band.rstrip()
-        else:
-            d["band"] = ""
-
-        d["filename"] = file
-
-        songs_list.append(d)
     print("")
     #print(json.dumps(songs_list, indent=4, ensure_ascii=False))
 
