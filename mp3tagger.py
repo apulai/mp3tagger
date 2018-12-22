@@ -24,7 +24,7 @@ from mp3_tagger.id3 import VERSION_2, VERSION_BOTH, VERSION_1
 #PATH="Z:\\mp3\\_Gyerek"
 #PATH="Z:\\mp3\\_Country"
 #PATH="Z:\\mp3\\_Disco"
-PATH="Z:\\mp3\\_Country"
+PATH="Z:\\mp3\\_Rock"
 #PATH="/mnt/backupdsk/mp3/_Magyar"
 #PATH="Z:\\mp3\\_Magyar\\EmilRulez-HelloT"
 
@@ -73,11 +73,10 @@ def collect_mp3info(directory):
             print("Warning: MP3 tag cannot be read from file: {}. Exception: {}".format(file, e))
 
         mp3.set_version(VERSION_2)  # we just want to get the v2 tags
-        d["tagversion"]="v2"        # We hope tags will be v2
+
         if len(mp3.artist) == 0:      # But if v2 tag is empty, let's try v1 tag instead
             mp3.set_version(VERSION_1)
-            d["tagversion"] = "v1"
-        if isinstance(mp3.artist, str):   # If it's a string we are good...
+                if isinstance(mp3.artist, str):   # If it's a string we are good...
             d["artist"] = mp3.artist.rstrip()
         else:
             d["artist"] = ""
@@ -85,7 +84,6 @@ def collect_mp3info(directory):
         mp3.set_version(VERSION_2)  # we just want to get the v2 tags
         if len(mp3.album) == 0:       # But if v2 tag is empty, let's try v1 tag instead
             mp3.set_version(VERSION_1)
-            d["tagversion"] = "v1"
         if isinstance(mp3.album, str):   # If it's a string we are good...
             d["album"] = mp3.album.rstrip()
         else:
@@ -94,7 +92,6 @@ def collect_mp3info(directory):
         mp3.set_version(VERSION_2)  # we just want to get the v2 tags
         if len(mp3.song) == 0:        # But if v2 tag is empty, let's try v1 tag instead
             mp3.set_version(VERSION_1)
-            d["tagversion"] = "v1"
         if isinstance(mp3.song, str):   # If it's a string we are good...
             d["song"] = mp3.song.rstrip()
         else:
@@ -103,7 +100,6 @@ def collect_mp3info(directory):
         mp3.set_version(VERSION_2)  # we just want to get the v2 tags
         if len(mp3.band) == 0:        # But if v2 tag is empty, let's try v1 tag instead
             mp3.set_version(VERSION_1)
-            d["tagversion"] = "v1"
         if isinstance(mp3.band, str):   # If it's a string we are good...
             d["band"] = mp3.band.rstrip()
         else:
@@ -266,11 +262,6 @@ def update_mp3info(songlist, requiredtag, write_v1_tags=False):
             needtosave=True
         if( song["artist"] != requiredtag["artist"] and requiredtag["artist"] != "keep" ):
             needtosave=True
-
-        if( song["tagversion"]=="v1" and write_v1_tags == False):
-            # ISSUE: mp3tagger seems not to handle corrctly if there is no tag or only v1 tags
-            needtosave = False
-            writelogfile("Log: only V1 tag excpetion: {}".format(song["filename"]))
 
         if (needtosave==True):
             try:
