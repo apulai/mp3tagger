@@ -5,6 +5,8 @@
 import os
 import glob
 import json
+import sys
+import getopt
 from mp3_tagger import MP3File
 from mp3_tagger.id3 import VERSION_2, VERSION_BOTH, VERSION_1
 
@@ -22,8 +24,9 @@ from mp3_tagger.id3 import VERSION_2, VERSION_BOTH, VERSION_1
 #PATH="Z:\\mp3\\_Gyerek"
 #PATH="Z:\\mp3\\_Country"
 #PATH="Z:\\mp3\\_Disco"
+PATH="Z:\\mp3\\_Country"
 #PATH="/mnt/backupdsk/mp3/_Magyar"
-PATH="Z:\\mp3\\_Magyar\\EmilRulez-HelloT"
+#PATH="Z:\\mp3\\_Magyar\\EmilRulez-HelloT"
 
 #TODO: Where MP3 is capital it is simply skipped on Linux
 EXTENSION = ".mp3"
@@ -68,8 +71,10 @@ def collect_mp3info(directory):
             print("Warning: MP3 tag cannot be read from file: {}. Exception: {}".format(file, e))
 
         mp3.set_version(VERSION_2)  # we just want to get the v2 tags
+        d["tagversion"]="v2"        # We hope tags will be v2
         if len(mp3.artist) == 0:      # But if v2 tag is empty, let's try v1 tag instead
             mp3.set_version(VERSION_1)
+            d["tagversion"] = "v1"
         if isinstance(mp3.artist, str):   # If it's a string we are good...
             d["artist"] = mp3.artist.rstrip()
         else:
@@ -78,6 +83,7 @@ def collect_mp3info(directory):
         mp3.set_version(VERSION_2)  # we just want to get the v2 tags
         if len(mp3.album) == 0:       # But if v2 tag is empty, let's try v1 tag instead
             mp3.set_version(VERSION_1)
+            d["tagversion"] = "v1"
         if isinstance(mp3.album, str):   # If it's a string we are good...
             d["album"] = mp3.album.rstrip()
         else:
@@ -86,6 +92,7 @@ def collect_mp3info(directory):
         mp3.set_version(VERSION_2)  # we just want to get the v2 tags
         if len(mp3.song) == 0:        # But if v2 tag is empty, let's try v1 tag instead
             mp3.set_version(VERSION_1)
+            d["tagversion"] = "v1"
         if isinstance(mp3.song, str):   # If it's a string we are good...
             d["song"] = mp3.song.rstrip()
         else:
@@ -94,6 +101,7 @@ def collect_mp3info(directory):
         mp3.set_version(VERSION_2)  # we just want to get the v2 tags
         if len(mp3.band) == 0:        # But if v2 tag is empty, let's try v1 tag instead
             mp3.set_version(VERSION_1)
+            d["tagversion"] = "v1"
         if isinstance(mp3.band, str):   # If it's a string we are good...
             d["band"] = mp3.band.rstrip()
         else:
@@ -232,10 +240,10 @@ def suggest_mostfrequent_mp3info(songlist):
     return retvalband,retvalalbum,retvalartist
 
 
-def update_mp3info(songlist, requiredtag):
+def update_mp3info(songlist, requiredtag, write_v1_tags=False):
     """
     function:	update_mp3info
-    input:	    songlist a directory of mp3 tags, dictionary of required mp3
+    input:	    songlist a directory of mp3 tags, dictionary of required mp3, write_v1_tags by default false
     output:
     operation:	writes mp3tags into each song, if tag == keep keeps tag (artist only)
     future:     updates processed dir logfile
@@ -256,6 +264,12 @@ def update_mp3info(songlist, requiredtag):
             needtosave=True
         if( song["artist"] != requiredtag["artist"] and requiredtag["artist"] != "keep" ):
             needtosave=True
+
+        if( song["tagversion"]=="v1" and write_v1_tags == False):
+            # ISSUE: mp3tagger seems not to handle corrctly if there is no tag or only v1 tags
+            needtosave = False
+            writelogfile("Log: only V1 tag excpetion: {}".format(song["filename"]))
+
         if (needtosave==True):
             try:
                 mp3 = MP3File(song["filename"])
@@ -436,9 +450,29 @@ def walkdir(dir):
             number_of_directories_found = number_of_directories_found - 1;
             print("Number of directories to go {}".format(number_of_directories_found))
 
+def main(argv):
+    try:
+        opts, args = getopt.getopt(argv, "hd:l:",["dir=","log="])
+    except getopt.GetoptError:
+        print('mp3tagger.py -d <directory> -l <logfiledir>')
+        sys.exit(2)
+    for opt, arg in opts:
+        if opt == '-h':
+            print('mp3tagger.py -d <directory> -l <logfiledir>')
+            sys.exit()
+        elif opt in ("-d", "--dir"):
+            glob.PATH = arg
+        elif opt in ("-l", "--logdir"):
+            glob.PROCESSED_DIR_FILE = arg
+    print("Path {} Logdir {}".format(PATH,PROCESSED_DIR_FILE))
+    walkdir(PATH)
 
 if __name__ == "__main__":
-    walkdir(PATH)
+    main(sys.argv[1:])
+
+
+
+
 
     exit(0)
 
