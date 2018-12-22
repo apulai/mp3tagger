@@ -403,8 +403,8 @@ def walkdir(dir):
 
     number_of_directories_found = len(directories)
     print("Found {} directories to scan".format(number_of_directories_found))
-    #Will try to load the list of processed directories
-    #We will skip processed directories
+    # Will try to load the list of processed directories
+    # We will skip processed directories
     try:
         with open(PROCESSED_DIR_FILE) as f:
             processed_dirs = f.read().splitlines()
