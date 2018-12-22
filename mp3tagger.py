@@ -453,6 +453,9 @@ def walkdir(dir):
             print("Number of directories to go {}".format(number_of_directories_found))
 
 def main(argv):
+    global PATH
+    global PROCESSED_DIR_FILE
+    global LOGFILE_NAME
     try:
         opts, args = getopt.getopt(argv, "hd:l:",["dir=","log="])
     except getopt.GetoptError:
@@ -463,11 +466,11 @@ def main(argv):
             print('mp3tagger.py -d <directory> -l <logfiledir>')
             sys.exit()
         elif opt in ("-d", "--dir"):
-            glob.PATH = arg
+            PATH = arg
         elif opt in ("-l", "--logdir"):
-            glob.LOGFILE_NAME = arg
+            LOGFILE_NAME = arg
 
-        glob.PROCESSED_DIR_FILE = glob.PATH + "/" + glob.LOGFILE_NAME
+        PROCESSED_DIR_FILE = PATH + "/" + LOGFILE_NAME
 
     print("Path {} Logdir {} Concat {}".format(PATH,LOGFILE_NAME,PROCESSED_DIR_FILE))
     walkdir(PATH)
