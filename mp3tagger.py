@@ -76,7 +76,7 @@ def collect_mp3info(directory):
 
         if len(mp3.artist) == 0:      # But if v2 tag is empty, let's try v1 tag instead
             mp3.set_version(VERSION_1)
-                if isinstance(mp3.artist, str):   # If it's a string we are good...
+        if isinstance(mp3.artist, str):   # If it's a string we are good...
             d["artist"] = mp3.artist.rstrip()
         else:
             d["artist"] = ""
