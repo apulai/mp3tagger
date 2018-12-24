@@ -13,11 +13,9 @@ from mp3_tagger.id3 import VERSION_2, VERSION_BOTH, VERSION_1
 
 #PATH = "/home/apulai/mp3"
 #PATH = "Z:\\"
-#PATH = "Z:\\Greatest Hits of the 80's 8CD 320KB 2Lions-Team\\Greatest Hits Of The 80's CD6"
 #PATH = "c:\\test"
 #PATH="Z:\\juca"
 #PATH="Z:\\mp3\\shrek"
-#PATH="Z:\\mp3\\_Magyar\\Groovehouse - Hajnal (2001)"
 #PATH="Z:\\mp3\\_Magyar"
 #PATH="D:\\temp"
 #PATH="Z:\\mp3\\_Latin"
@@ -27,12 +25,14 @@ from mp3_tagger.id3 import VERSION_2, VERSION_BOTH, VERSION_1
 PATH="Z:\\mp3\\_Rock"
 #PATH="Z:\\mp3\\_Country"
 #PATH="/mnt/backupdsk/mp3/_Magyar"
-#PATH="Z:\\mp3\\_Magyar\\EmilRulez-HelloT"
 
-#TODO: Where MP3 is capital it is simply skipped on Linux
-EXTENSION = ".mp3"
+# We will look for these extensions
+LIST_OF_EXTENSIONS = ".mp3", ".MP3"
 
-# TODO: Skip directories marked as consistent in the processed.log file (likely load proccessed log before run
+# TODO: Skip only those directories which wew marked as consistent in the processed.log file (likely load proccessed log before run (Patrik)
+# TODO: Log somehow if mp3 file had only v1 tags
+# TODO: Print error if mp3 v1 found
+
 #LOGFILE_NAME = "uxprocessed.log"
 LOGFILE_NAME = "processed.log"
 #PROCESSED_DIR_FILE = PATH + "/uxprocessed.log"
@@ -41,9 +41,6 @@ PROCESSED_DIR_FILE = PATH + "/" + LOGFILE_NAME
 rootDir = PATH
 report_inconsistent_directories = 1
 update_mp3data = 1
-
-# TODO: sync v1 and v2 tags
-
 
 def collect_mp3info(directory):
     """
@@ -56,9 +53,28 @@ def collect_mp3info(directory):
     """
     print("Function: collect_mp3info Directory {}".format(directory))
     songs_list = list()
-    file_list = glob.glob(directory + "/*" + EXTENSION, recursive=False)
+    file_list = list()
+    for extension in LIST_OF_EXTENSIONS:
+            temp_list = glob.glob(directory + "/*" + extension, recursive=False)
+            # Do not append a list to a list...
+            file_list = file_list + temp_list
+
+    #Since on windows .mp3 and .MP3 is not different
+    #Make this list uniq again
+
+    temp_list = file_list
+
+    file_list = list()
+    for x in temp_list:
+        if x not in file_list:
+            file_list.append(x)
+
+    #extension = ".mp3"
+    #file_list = glob.glob(directory + "/*" + extension, recursive=False)
+
     # print(directory),
-    # print(file_list),
+    #print(file_list),
+
     for file in file_list:
         # print("file:", file)
         # print("file: " + file)
@@ -189,25 +205,46 @@ def suggest_mostfrequent_mp3info(songlist):
                 most frequent band and album string
                 returns band, album
     """
+
+    # If we get no data let's return
+    totalnumberofsongs = len(songlist)
+    if totalnumberofsongs == 0:
+        return "empty", "empty", "empty"
+
     albumlist = list()
     bandlist = list()
     artistlist = list()
-    for song in songlist:
+    for song in songlist:                   # Create 3 separate list of attributes so we can work with them easier
         albumlist.append(song["album"])
         bandlist.append(song["band"])
         artistlist.append(song["artist"])
 
+    # Start work on list of albums, calculate most ferquent album name
     track = {}
     for value in albumlist:
-        if( value == [] or (value is None) ):
+        if( value == [] or (value is None) ): # sometimes we got NoneVaule, likely this won't happen anymore, but we still check
             value = "empty"
         if value not in track:
             track[value] = 0
         else:
             track[value] += 1
-    retvalalbum=max(track, key=track.get)
+    retvalalbum=max(track, key=track.get)     # sometimes we got NoneVaule, likely this won't happen anymore, but we still check
     retvalalbumqty=track[retvalalbum]
 
+    # Start work on list of artits, calculate most ferquent artist name
+    track = {}
+    for value in artistlist:
+        if (value == [] or(value is None)):
+            value = "empty"
+        if value not in track:
+            track[value] = 0
+        else:
+            track[value] += 1
+    retvalartist = max(track, key=track.get)
+    retvalartistqty = track[retvalartist]
+    totalnumberofdifferentartist=len(track)
+
+    # Start work on list of band, calculate most ferquent band name
     track = {}
     for value in bandlist:
         if (value == [] or (value is None)):
@@ -219,23 +256,21 @@ def suggest_mostfrequent_mp3info(songlist):
     retvalband = max(track, key=track.get)
     retvalbandqty = track[retvalband]
 
-    track = {}
-    for value in artistlist:
-        if (value == [] or(value is None)):
-            value = "empty"
-        if value not in track:
-            track[value] = 0
-        else:
-            track[value] += 1
-    retvalartist = max(track, key=track.get)
-    retvalartistqty = track[retvalartist]
+#If band is empty propose artist as band
+    if retvalband == "empty" :
+            # If the most frequent artist is present in more than 15% of the songs
+            # and the band is empty let's propose artist as the band
+            if float(retvalartistqty)/float(totalnumberofsongs) >= 0.15:
+                retvalband = retvalartist
 
-#TODO: If band is empty propose artist as band
-#TODO: If all_artist is only once: propose keep to keep them
+#If all_artist is only once: propose keep to keep them
+    if float(totalnumberofdifferentartist)/float(totalnumberofsongs) == 1.0:
+        retvalartist = "keep"
 
-    print("Most frequent band:\t {} number of occurances {} .".format(retvalband,retvalbandqty))
-    print("Most frequent album:\t {} number of occurances {} .".format(retvalalbum,retvalalbumqty))
-    print("Most frequent artist:\t {} number of occurances {} . ".format(retvalartist, retvalartistqty))
+    print("Total number of songs in this folder:\t{}".format(totalnumberofsongs))
+    print("Most frequent band:\t{} number of occurances: {} .".format(retvalband,retvalbandqty))
+    print("Most frequent album:\t{} number of occurances: {} .".format(retvalalbum,retvalalbumqty))
+    print("Most frequent artist:\t{} number of occurances: {} . ".format(retvalartist, retvalartistqty))
 
     return retvalband,retvalalbum,retvalartist
 
@@ -285,6 +320,7 @@ def update_mp3info(songlist, requiredtag, write_v1_tags=False):
                 mp3.save()
             except Exception as e:
                 print("Warning: MP3 tag cannot be saved for file: {}. Exception: {}".format(song["filename"], e))
+                writelogfile("Log: Warning: MP3 tag cannot be saved for file:" + format(song["filename"])+ format(e))
             else:
                 #TODO: update processed.log as directory now consistent
                 print("Info: MP3 tag updated for file: {}".format(song["filename"]))
@@ -364,15 +400,16 @@ def process_dir(current_directory):
             print(json.dumps(song_list, indent=4, ensure_ascii=False))
             print("Album is inconsistent")
             if (update_mp3data == 1):
+                # Try to analyze the collected info, and come back with suggestions
                 suggestedband, suggestedalbum, suggestedartist = suggest_mostfrequent_mp3info(song_list)
-                print(
-                    "Suggested band: " + suggestedband + "\tSuggested album: " + suggestedalbum + "\tSuggested artist: " + suggestedartist)
-                accept = input("Accept suggested (Y/n/q/s for skip)?")
+                # Ask for user input
+                print("Suggested band: " + suggestedband + "\tSuggested album: " + suggestedalbum + "\tSuggested artist: " + suggestedartist)
+                accept = input("Accept suggested (Y/n/q/(s)kip)?")
                 if accept.lower() == 'n':
                     suggestedband = input("Enter new band: %s " % suggestedband) or suggestedband
                     suggestedalbum = input("Enter new album: %s " % suggestedalbum) or suggestedalbum
                     suggestedartist = input(
-                        "Enter new artist (or keep or blank) %s" % suggestedartist) or suggestedartist
+                        "Enter new artist (or keep to keep) %s" % suggestedartist) or suggestedartist
                     print(
                         "New values: Suggested band: " + suggestedband + "\tSuggested album: " + suggestedalbum + "\tSuggested artist: " + suggestedartist)
                 if accept.lower() == 'q':
@@ -411,8 +448,8 @@ def walkdir(dir):
     #    print("{} {}".format(i,p))
     #    i=i+1
     #exit(1)
-    # But also add current directory
 
+    # Add current directory
     directories.append(dir)
 
     number_of_directories_found = len(directories)
@@ -435,6 +472,7 @@ def walkdir(dir):
             # We are in a new directory
             if current_directory not in processed_dirs:
                 print("Processing dir: {}".format(current_directory))
+                # We will collect and update mp3 info in to following call:
                 if process_dir(current_directory) == 0:
                     # If we managed to refresh this directory,
                     # we log it as updated
@@ -456,15 +494,15 @@ def main(argv):
     global LOGFILE_NAME
 
     try:
-        opts, args = getopt.getopt(argv, "hd:l:",["dir=","log="])
+        opts, args = getopt.getopt(argv, "hp:l:",["path=","log="])
     except getopt.GetoptError:
-        print('mp3tagger.py -d <directory> -l <logfiledir>')
+        print('mp3tagger.py -p <path> -l <logfiledir>')
         sys.exit(2)
     for opt, arg in opts:
         if opt == '-h':
-            print('mp3tagger.py -d <directory> -l <logfiledir>')
+            print('mp3tagger.py -p <path> -l <logfiledir>')
             sys.exit()
-        elif opt in ("-d", "--dir"):
+        elif opt in ("-p", "--path"):
             PATH = arg
         elif opt in ("-l", "--logdir"):
             LOGFILE_NAME = arg
@@ -477,13 +515,8 @@ def main(argv):
 if __name__ == "__main__":
     main(sys.argv[1:])
 
-
-
-
-
-    exit(0)
-
     #Test cases
+    exit(0)
     song_list = collect_mp3info("D:\\temp\\mp3\\Alma Együttes - Bio (2006)")
     print(is_mp3info_consistent(song_list))
     suggestedband, suggestedalbum, suggestedartist = suggest_mostfrequent_mp3info(song_list)
