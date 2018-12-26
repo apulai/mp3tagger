@@ -303,7 +303,8 @@ def update_mp3info(songlist, requiredtag, write_v1_tags=False):
         if( song["tagversion"]=="v1" and write_v1_tags == False):
             # ISSUE: mp3tagger seems not to handle corrctly if there is no tag or only v1 tags
             needtosave = False
-            writelogfile("Log: only V1 tag excpetion: {}".format(song["filename"]))
+            print("WARNING: Song with V1 tags only: {}".format(song["filename"]))
+            #writelogfile("Log: only V1 tag excpetion: {}".format(song["filename"]))
 
         if (needtosave==True):
             try:
@@ -382,6 +383,14 @@ def walkdir_OBSOLETE(dir):
                 walkdir_OBSOLETE(dname)
         print("Directroy processed: {}".format(dirName))
 
+def v1_tags_present(song_list):
+    # Walk through the tags and check if any of them is v1
+    # if v1 we return true
+    for song in song_list:
+        if song["tagversion"] == "v1":
+            return True
+    return False
+
 
 def process_dir(current_directory):
     """
@@ -389,6 +398,7 @@ def process_dir(current_directory):
     input:	    foldername
     output:	    0 if directory is updated
                 1 if directory is not updated
+                2 if directory has v1 tags and it is not updated
     operation:	generates list of songs in current directory
                 collects mp3info
                 processes mp3info
@@ -396,6 +406,10 @@ def process_dir(current_directory):
 
     song_list=collect_mp3info(current_directory)
     if (len(song_list) > 0):
+        # If there are v1 tags present we will log only an error for this directory
+        if (v1_tags_present(song_list) == True ):
+            print("Album has songs with v1 tags only, not safe to process")
+            return 2
         if (is_mp3info_consistent(song_list) == False):
             print(json.dumps(song_list, indent=4, ensure_ascii=False))
             print("Album is inconsistent")
@@ -473,21 +487,27 @@ def walkdir(dir):
             if current_directory not in processed_dirs:
                 print("Processing dir: {}".format(current_directory))
                 # We will collect and update mp3 info in to following call:
-                if process_dir(current_directory) == 0:
+                retval = process_dir(current_directory)
+                if retval == 0:
                     # If we managed to refresh this directory,
                     # we log it as updated
                     processed_dirs.append(current_directory)
                     #TODO: Add a result into the logfile not only the directory
                     #writelogfile("OK:\n")
-                else:
-                    print("Directory was not processed OK (likely skipped)")
+                    writelogfile(current_directory + '\n')
+                elif retval == 1:
+                    print("Directory was skipped / not processed")
                     #writelogfile ("Skip:\n")
-                writelogfile(current_directory + '\n')
+                    writelogfile("Skip:" + current_directory + '\n')
+                else:
+                    print("Directory had V1 only tags")
+                    writelogfile("ERR V1:" + current_directory + '\n')
             else:
                 print("Directory: {} was already processed.".format(current_directory))
             number_of_directories_found = number_of_directories_found - 1;
             print("Number of directories to go {}".format(number_of_directories_found))
 
+#TODO: if no arguments, then use current folder as path
 def main(argv):
     global PATH
     global PROCESSED_DIR_FILE
