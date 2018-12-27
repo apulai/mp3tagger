@@ -19,10 +19,14 @@ from mp3_tagger.id3 import VERSION_2, VERSION_BOTH, VERSION_1
 #PATH="Z:\\mp3\\_Magyar"
 #PATH="D:\\temp"
 #PATH="Z:\\mp3\\_Latin"
-#PATH="Z:\\mp3\\_Gyerek"
 #PATH="Z:\\mp3\\_Country"
 #PATH="Z:\\mp3\\_Disco"
-PATH="Z:\\mp3\\_Rock"
+#PATH="Z:\\mp3\\_Folk"
+#PATH="Z:\\mp3\\_Gyerek"
+#PATH="Z:\\mp3\\_Hangoskonyv"
+PATH="Z:\\mp3\\_Jazz\\Take Five"
+#PATH="Z:\\mp3\\_Jazz\\Smooth Africa"
+#PATH="Z:\\mp3\\_Rock"
 #PATH="Z:\\mp3\\_Country"
 #PATH="/mnt/backupdsk/mp3/_Magyar"
 
@@ -175,7 +179,7 @@ def is_mp3info_consistent(songs_list):
 
         if first_song["artist"] != song["artist"]:
             artist_consistent = False
-            print("Err: Artist inconsistent")
+            print("Suspect: Artist inconsistent")
             break
         if first_song["album"] != song["album"]:
             album_consistent = False
@@ -185,6 +189,32 @@ def is_mp3info_consistent(songs_list):
             band_consistent = False
             print("Err: Band inconsistent")
             break
+
+    # Not all artist was the same
+    # We can correct it if band is consistent and album is consistent
+    # And all artist is different then we are still OK
+
+    if( artist_consistent == False):
+        print("Double check artist consistency, if album and band is consitent, and artists are all different we can be OK")
+        if ( band_consistent == True and album_consistent == True):
+            totalnumberofsongs = len(songs_list)
+            artistlist = list()
+            for song in songs_list:  # We need to generate the list of artists
+                artistlist.append(song["artist"])
+            track = {}
+            for value in artistlist:
+                if (value == [] or (value is None)):
+                    value = "empty"
+                if value not in track:
+                    track[value] = 1
+                else:
+                    track[value] += 1
+            numberofdifferentartists = len(track)
+            if ( float(numberofdifferentartists)/float(totalnumberofsongs)==1.0):
+                artist_consistent = True
+                print("Doublecheck: artist is OK, since number of artists = number of songs different")
+            else:
+                print("Double check: artist is really not OK")
 
     if not first_nonempty_band:
         print("Band is empty for all songs!")
@@ -225,7 +255,7 @@ def suggest_mostfrequent_mp3info(songlist):
         if( value == [] or (value is None) ): # sometimes we got NoneVaule, likely this won't happen anymore, but we still check
             value = "empty"
         if value not in track:
-            track[value] = 0
+            track[value] = 1
         else:
             track[value] += 1
     retvalalbum=max(track, key=track.get)     # sometimes we got NoneVaule, likely this won't happen anymore, but we still check
@@ -237,7 +267,7 @@ def suggest_mostfrequent_mp3info(songlist):
         if (value == [] or(value is None)):
             value = "empty"
         if value not in track:
-            track[value] = 0
+            track[value] = 1
         else:
             track[value] += 1
     retvalartist = max(track, key=track.get)
@@ -247,10 +277,10 @@ def suggest_mostfrequent_mp3info(songlist):
     # Start work on list of band, calculate most ferquent band name
     track = {}
     for value in bandlist:
-        if (value == [] or (value is None)):
+        if (value == "" or (value is None)):
             value = "empty"
         if value not in track:
-            track[value] = 0
+            track[value] = 1
         else:
             track[value] += 1
     retvalband = max(track, key=track.get)
@@ -268,9 +298,9 @@ def suggest_mostfrequent_mp3info(songlist):
         retvalartist = "keep"
 
     print("Total number of songs in this folder:\t{}".format(totalnumberofsongs))
-    print("Most frequent band:\t{} number of occurances: {} .".format(retvalband,retvalbandqty))
-    print("Most frequent album:\t{} number of occurances: {} .".format(retvalalbum,retvalalbumqty))
-    print("Most frequent artist:\t{} number of occurances: {} . ".format(retvalartist, retvalartistqty))
+    print("Most frequent band:\t{} \tnumber of occurances: {} .".format(retvalband,retvalbandqty))
+    print("Most frequent album:\t{} \tnumber of occurances: {} .".format(retvalalbum,retvalalbumqty))
+    print("Most frequent artist:\t{} \tnumber of occurances: {} . ".format(retvalartist, retvalartistqty))
 
     return retvalband,retvalalbum,retvalartist
 
