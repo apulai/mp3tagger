@@ -144,7 +144,7 @@ def collect_mp3info(directory):
             songs_list.append(d)
         except Exception as e:
             print("Warning: MP3 tag cannot be read from file: {}. Exception: {}".format(file, e))
-            writelogfile("ERR MP3:" + format(file))
+            writelogfile("ERR MP3:" + format(file) + "\n")
     print("")
     print(json.dumps(songs_list, indent=4, ensure_ascii=False))
 
@@ -281,16 +281,17 @@ def suggest_mostfrequent_mp3info(songlist):
             track[value] = 1
         else:
             track[value] += 1
-    # We will select here the most frequent artist
 
+    # We will select here the most frequent artist
     mostfrequentartist = max(track, key=track.get)
     retvalartist = mostfrequentartist
-    mostfrequentartistqty = track[retvalartist]
+    mostfrequentartistqty = track[mostfrequentartist]
     retvalartistqty = mostfrequentartistqty
     totalnumberofdifferentartist=len(track)
 
+
     # But If all song has an artist we will propose keep instead
-    if ("empty" not in artistlist):
+    if ("" not in artistlist):
         retvalartist = "keep"
 
     # Start work on list of band, calculate most ferquent band name
@@ -357,13 +358,13 @@ def update_mp3info(songlist, requiredtag, write_v1_tags=False):
             try:
                 mp3 = MP3File(song["filename"])
                 mp3.set_version(VERSION_BOTH)
-                mp3.band=requiredtag["band"]
-                mp3.album=requiredtag["album"]
+                mp3.band = requiredtag["band"]
+                mp3.album = requiredtag["album"]
                 if song["song"] == "":
                     # My TC friend is totally bored sometimes somewhere so he learns stuff like [:-4]
                     mp3.song = os.path.basename(song["filename"])[:-4]
                 if (requiredtag["artist"] != "keep"):
-                    mp3.artist=requiredtag["artist"]
+                    mp3.artist = requiredtag["artist"]
                 #print('Writing tags to %s' % song["filename"] )
                 mp3.save()
             except Exception as e:
@@ -598,5 +599,9 @@ def main(argv):
     walkdir(PATH)
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    #main(sys.argv[1:])
 
+    #songlist = collect_mp3info("Z:\\mp3\\_Magyar\\István a király\\Cd1")
+    songlist = collect_mp3info("Z:\\mp3\\_Magyar\\Valami Amerika")
+    suggestedband, suggestedalbum, suggestedartist = suggest_mostfrequent_mp3info(songlist)
+    print("Suggested band: " + suggestedband + "\tSuggested album: " + suggestedalbum + "\tSuggested artist: " + suggestedartist)
