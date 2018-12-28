@@ -24,7 +24,9 @@ from mp3_tagger.id3 import VERSION_2, VERSION_BOTH, VERSION_1
 #PATH="Z:\\mp3\\_Folk"
 #PATH="Z:\\mp3\\_Gyerek"
 #PATH="Z:\\mp3\\_Hangoskonyv"
-PATH="Z:\\mp3\\_Jazz\\Take Five"
+#PATH="Z:\\mp3\\_Jazz\\Take Five"
+#PATH="Z:\\mp3\\_Magyar\\Valami Amerika"
+PATH="Z:\\mp3\\_Vegyes"
 #PATH="Z:\\mp3\\_Jazz\\Smooth Africa"
 #PATH="Z:\\mp3\\_Rock"
 #PATH="Z:\\mp3\\_Country"
@@ -140,8 +142,9 @@ def collect_mp3info(directory):
             songs_list.append(d)
         except Exception as e:
             print("Warning: MP3 tag cannot be read from file: {}. Exception: {}".format(file, e))
+            writelogfile("ERR MP3:" + format(file))
     print("")
-    #print(json.dumps(songs_list, indent=4, ensure_ascii=False))
+    print(json.dumps(songs_list, indent=4, ensure_ascii=False))
 
     return songs_list
 
@@ -198,7 +201,8 @@ def is_mp3info_consistent(songs_list):
     # And all artist is different then we are still OK
 
     if( artist_consistent == False):
-        print("Double check artist consistency, if album and band is consitent, and artists are all different we can be OK")
+        #print("Double check artist consistency, if album and band is consitent, and artists are all different we can be OK")
+        print("Double check artist consistency, if album and band is consitent, and no empty artists are then OK")
         if ( band_consistent == True and album_consistent == True):
             totalnumberofsongs = len(songs_list)
             artistlist = list()
@@ -213,9 +217,11 @@ def is_mp3info_consistent(songs_list):
                 else:
                     track[value] += 1
             numberofdifferentartists = len(track)
-            if ( float(numberofdifferentartists)/float(totalnumberofsongs)==1.0):
+            #if ( float(numberofdifferentartists)/float(totalnumberofsongs)==1.0):
+            if( "empty" not in artistlist):
                 artist_consistent = True
-                print("Doublecheck: artist is OK, since number of artists = number of songs different")
+                print("Doublecheck: artist is OK, since no empty artist while band and album is consistent")
+
             else:
                 print("Double check: artist is really not OK")
 
@@ -273,9 +279,14 @@ def suggest_mostfrequent_mp3info(songlist):
             track[value] = 1
         else:
             track[value] += 1
+    # We will select here the most frequent artist
     retvalartist = max(track, key=track.get)
     retvalartistqty = track[retvalartist]
     totalnumberofdifferentartist=len(track)
+
+    # But If all song has an artist we will propose keep instead
+    if ("empty" not in artistlist):
+        retvalartist = "keep"
 
     # Start work on list of band, calculate most ferquent band name
     track = {}
@@ -296,9 +307,7 @@ def suggest_mostfrequent_mp3info(songlist):
             if float(retvalartistqty)/float(totalnumberofsongs) >= 0.15:
                 retvalband = retvalartist
 
-#If all_artist is only once: propose keep to keep them
-    if float(totalnumberofdifferentartist)/float(totalnumberofsongs) == 1.0:
-        retvalartist = "keep"
+
 
     print("Total number of songs in this folder:\t{}".format(totalnumberofsongs))
     print("Most frequent band:\t{} \tnumber of occurances: {} .".format(retvalband,retvalbandqty))
@@ -521,7 +530,7 @@ def walkdir(dir):
             if current_directory not in processed_dirs:
                 # If our current directory was not already processed we will process it.
                 # We will collect and update mp3 info in to following call:
-                print("Processing dir: {}".format(current_directory))
+                #print("Processing dir: {}".format(current_directory))
                 retval = process_dir(current_directory)
 
                 # Process_dir will return different error codes for different problems
