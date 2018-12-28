@@ -144,7 +144,7 @@ def collect_mp3info(directory):
             print("Warning: MP3 tag cannot be read from file: {}. Exception: {}".format(file, e))
             writelogfile("ERR MP3:" + format(file))
     print("")
-    print(json.dumps(songs_list, indent=4, ensure_ascii=False))
+    #print(json.dumps(songs_list, indent=4, ensure_ascii=False))
 
     return songs_list
 
