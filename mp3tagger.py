@@ -33,9 +33,12 @@ PATH="Z:\\mp3\\_Jazz\\Take Five"
 # We will look for these extensions
 LIST_OF_EXTENSIONS = ".mp3", ".MP3"
 
-# TODO: Skip only those directories which wew marked as consistent in the processed.log file (likely load proccessed log before run (Patrik)
-# TODO: Log somehow if mp3 file had only v1 tags
-# TODO: Print error if mp3 v1 found
+# Pseudo done: TODO: Skip only those directories which were marked as consistent in the processed.log file (likely load proccessed log before run
+# We log error message and then the directory name
+
+# Pseudo done: TODO: Log somehow if mp3 file had only v1 tags
+# Folder is logged
+
 
 #LOGFILE_NAME = "uxprocessed.log"
 LOGFILE_NAME = "processed.log"
@@ -353,7 +356,6 @@ def update_mp3info(songlist, requiredtag, write_v1_tags=False):
                 print("Warning: MP3 tag cannot be saved for file: {}. Exception: {}".format(song["filename"], e))
                 writelogfile("Log: Warning: MP3 tag cannot be saved for file:" + format(song["filename"])+ format(e))
             else:
-                #TODO: update processed.log as directory now consistent
                 print("Info: MP3 tag updated for file: {}".format(song["filename"]))
 
 
@@ -498,8 +500,9 @@ def walkdir(dir):
 
     number_of_directories_found = len(directories)
     print("Found {} directories to scan".format(number_of_directories_found))
-    # Will try to load the list of processed directories
+
     # We will skip processed directories
+    # Therefore we try to load the list of processed directories
     try:
         with open(PROCESSED_DIR_FILE) as f:
             processed_dirs = f.read().splitlines()
@@ -507,41 +510,59 @@ def walkdir(dir):
         print("Processed directories log file: {} cannot be opened.".format(PROCESSED_DIR_FILE))
         processed_dirs = []
     # print(processed_dirs)
+    # Logfile of processed directories are now loaded
 
     current_directory = ''
     first_file = True
     first_file_in_dir = True
     new = {}
     for current_directory in directories:
-            # We are in a new directory
+            # We will check in this list if our current directory was alread processed:
             if current_directory not in processed_dirs:
-                print("Processing dir: {}".format(current_directory))
+                # If our current directory was not already processed we will process it.
                 # We will collect and update mp3 info in to following call:
+                print("Processing dir: {}".format(current_directory))
                 retval = process_dir(current_directory)
+
+                # Process_dir will return different error codes for different problems
+                # Let's check them 1 by 1
                 if retval == 0:
                     # If we managed to refresh this directory,
                     # we log it as updated
                     processed_dirs.append(current_directory)
-                    #TODO: Add a result into the logfile not only the directory
-                    #writelogfile("OK:\n")
                     writelogfile(current_directory + '\n')
                 elif retval == 1:
                     print("Directory was skipped / not processed")
-                    #writelogfile ("Skip:\n")
+                    #We are adding some easy to grep error in the log
+                    #This will also invalidate the directory when we will load the processed.log file
+                    #next time we run this tool (there is likely no Skip: driectory when listing the contents)
                     writelogfile("Skip:" + current_directory + '\n')
                 else:
+                    # We are adding some easy to grep error in the log
+                    # This will also invalidate the directory when we will load the processed.log file
+                    # next time we run this tool (there is likely no Skip: driectory when listing the contents)
                     print("Directory had V1 only tags")
                     writelogfile("ERR V1:" + current_directory + '\n')
             else:
                 print("Directory: {} was already processed.".format(current_directory))
             number_of_directories_found = number_of_directories_found - 1;
             print("Number of directories to go {}".format(number_of_directories_found))
+    print("Walk complete. Remeber to check logfile for errors, like folders with v1 tags only.")
 
 #TODO: if no arguments, then use current folder as path
 def main(argv):
     global PATH
     global PROCESSED_DIR_FILE
     global LOGFILE_NAME
+
+    try:
+        PATH
+    except NameError:
+        print("PATH is not defined, we will use current directory")
+        PATH = os.getcwd()
+    else:
+        print("PATH is defined in the script body")
+
 
     try:
         opts, args = getopt.getopt(argv, "hp:l:",["path=","log="])
@@ -565,9 +586,3 @@ def main(argv):
 if __name__ == "__main__":
     main(sys.argv[1:])
 
-    #Test cases
-    exit(0)
-    song_list = collect_mp3info("D:\\temp\\mp3\\Alma Együttes - Bio (2006)")
-    print(is_mp3info_consistent(song_list))
-    suggestedband, suggestedalbum, suggestedartist = suggest_mostfrequent_mp3info(song_list)
-    print(suggestedband, suggestedalbum, suggestedartist)
