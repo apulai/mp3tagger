@@ -26,7 +26,9 @@ from mp3_tagger.id3 import VERSION_2, VERSION_BOTH, VERSION_1
 #PATH="Z:\\mp3\\_Hangoskonyv"
 #PATH="Z:\\mp3\\_Jazz\\Take Five"
 #PATH="Z:\\mp3\\_Magyar\\Valami Amerika"
-PATH="Z:\\mp3\\_Vegyes"
+#PATH="Z:\\mp3\\_Pop\\Boney M - The Magic Of Boney M"
+PATH="Z:\mp3\_Magyar\István a király"
+#PATH="Z:\\mp3\\_Vegyes"
 #PATH="Z:\\mp3\\_Jazz\\Smooth Africa"
 #PATH="Z:\\mp3\\_Rock"
 #PATH="Z:\\mp3\\_Country"
@@ -144,7 +146,7 @@ def collect_mp3info(directory):
             print("Warning: MP3 tag cannot be read from file: {}. Exception: {}".format(file, e))
             writelogfile("ERR MP3:" + format(file))
     print("")
-    #print(json.dumps(songs_list, indent=4, ensure_ascii=False))
+    print(json.dumps(songs_list, indent=4, ensure_ascii=False))
 
     return songs_list
 
@@ -280,8 +282,11 @@ def suggest_mostfrequent_mp3info(songlist):
         else:
             track[value] += 1
     # We will select here the most frequent artist
-    retvalartist = max(track, key=track.get)
-    retvalartistqty = track[retvalartist]
+
+    mostfrequentartist = max(track, key=track.get)
+    retvalartist = mostfrequentartist
+    mostfrequentartistqty = track[retvalartist]
+    retvalartistqty = mostfrequentartistqty
     totalnumberofdifferentartist=len(track)
 
     # But If all song has an artist we will propose keep instead
@@ -304,8 +309,8 @@ def suggest_mostfrequent_mp3info(songlist):
     if retvalband == "empty" :
             # If the most frequent artist is present in more than 15% of the songs
             # and the band is empty let's propose artist as the band
-            if float(retvalartistqty)/float(totalnumberofsongs) >= 0.15:
-                retvalband = retvalartist
+            if float(mostfrequentartistqty)/float(totalnumberofsongs) >= 0.15:
+                retvalband = mostfrequentartist
 
 
 
