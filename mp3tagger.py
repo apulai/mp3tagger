@@ -271,6 +271,8 @@ def suggest_mostfrequent_mp3info(songlist):
             track[value] += 1
     retvalalbum=max(track, key=track.get)     # sometimes we got NoneVaule, likely this won't happen anymore, but we still check
     retvalalbumqty=track[retvalalbum]
+    calculatedalbum=retvalalbum
+    calculatedalbumqty=retvalalbumqty
 
     # Start work on list of artits, calculate most ferquent artist name
     track = {}
@@ -283,10 +285,10 @@ def suggest_mostfrequent_mp3info(songlist):
             track[value] += 1
 
     # We will select here the most frequent artist
-    mostfrequentartist = max(track, key=track.get)
-    retvalartist = mostfrequentartist
-    mostfrequentartistqty = track[mostfrequentartist]
-    retvalartistqty = mostfrequentartistqty
+    calculatedartist = max(track, key=track.get)
+    retvalartist = calculatedartist
+    calculatedartistqty = track[calculatedartist]
+    retvalartistqty = calculatedartistqty
     totalnumberofdifferentartist=len(track)
 
 
@@ -305,20 +307,27 @@ def suggest_mostfrequent_mp3info(songlist):
             track[value] += 1
     retvalband = max(track, key=track.get)
     retvalbandqty = track[retvalband]
+    calculatedband=retvalband
+    calculatedbandqty=retvalbandqty
 
 #If band is empty propose artist as band
     if retvalband == "empty" :
             # If the most frequent artist is present in more than 15% of the songs
             # and the band is empty let's propose artist as the band
-            if float(mostfrequentartistqty)/float(totalnumberofsongs) >= 0.15:
-                retvalband = mostfrequentartist
+            if float(calculatedartistqty)/float(totalnumberofsongs) >= 0.15:
+                retvalband = calculatedartist
 
 
 
     print("Total number of songs in this folder:\t{}".format(totalnumberofsongs))
-    print("Most frequent band:\t{} \tnumber of occurances: {} .".format(retvalband,retvalbandqty))
-    print("Most frequent album:\t{} \tnumber of occurances: {} .".format(retvalalbum,retvalalbumqty))
-    print("Most frequent artist:\t{} \tnumber of occurances: {} . ".format(retvalartist, retvalartistqty))
+
+    print("Most frequent band:\t{} \tnumber of occurances: {} .".format(calculatedband, calculatedbandqty))
+    print("Most frequent album:\t{} \tnumber of occurances: {} .".format(calculatedalbum, calculatedalbumqty))
+    print("Most frequent artist:\t{} \tnumber of occurances: {} . ".format(calculatedartist, calculatedartistqty))
+
+    print("Returning proposal for band:\t{} \tnumber of occurances: {} .".format(retvalband,retvalbandqty))
+    print("Returning proposal for album:\t{} \tnumber of occurances: {} .".format(retvalalbum,retvalalbumqty))
+    print("Returning proposal for artist:\t{} \tnumber of occurances: {} . ".format(retvalartist, retvalartistqty))
 
     return retvalband,retvalalbum,retvalartist
 
@@ -601,7 +610,13 @@ def main(argv):
 if __name__ == "__main__":
     #main(sys.argv[1:])
 
+    #exit(0)
     #songlist = collect_mp3info("Z:\\mp3\\_Magyar\\István a király\\Cd1")
-    songlist = collect_mp3info("Z:\\mp3\\_Magyar\\Valami Amerika")
+    songlist = collect_mp3info("D:\\temp\\mp3\\Valami Amerika")
     suggestedband, suggestedalbum, suggestedartist = suggest_mostfrequent_mp3info(songlist)
     print("Suggested band: " + suggestedband + "\tSuggested album: " + suggestedalbum + "\tSuggested artist: " + suggestedartist)
+    requiredtag = dict()
+    requiredtag["artist"]="ARTISTA"
+    requiredtag["album"]="ALBUMM"
+    requiredtag["band"]="Banda"
+    update_mp3info(songlist, requiredtag)
