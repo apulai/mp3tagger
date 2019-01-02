@@ -11,7 +11,7 @@ PATH="/mnt/backupdsk/mp3/_Rock/Jethro_Tull"
 directories = glob.glob(PATH + '/**/*/', recursive=True)
 
 # Add current directory
-directories.append(dir)
+directories.append(PATH)
 
 number_of_directories_found = len(directories)
 print("Found {} directories to scan".format(number_of_directories_found))
