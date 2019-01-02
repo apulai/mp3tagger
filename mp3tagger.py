@@ -25,9 +25,9 @@ from mp3_tagger.id3 import VERSION_2, VERSION_BOTH, VERSION_1
 #PATH="Z:\\mp3\\_Gyerek"
 #PATH="Z:\\mp3\\_Hangoskonyv"
 #PATH="Z:\\mp3\\_Jazz\\Take Five"
-#PATH="Z:\\mp3\\_Magyar\\Valami Amerika"
+PATH="Z:\\mp3\\_Magyar\\Valami Amerika"
 #PATH="Z:\\mp3\\_Pop\\Boney M - The Magic Of Boney M"
-PATH="Z:\mp3\_Magyar\István a király"
+#PATH="Z:\mp3\_Magyar\István a király"
 #PATH="Z:\\mp3\\_Vegyes"
 #PATH="Z:\\mp3\\_Jazz\\Smooth Africa"
 #PATH="Z:\\mp3\\_Rock"
@@ -36,6 +36,10 @@ PATH="Z:\mp3\_Magyar\István a király"
 
 # We will look for these extensions
 LIST_OF_EXTENSIONS = ".mp3", ".MP3"
+
+# In some of the tags there were very strange chars
+# We want them to be removed
+BAD_CHARS = " \n\x00\r\ufeff"
 
 # Pseudo done: TODO: Skip only those directories which were marked as consistent in the processed.log file (likely load proccessed log before run
 # We log error message and then the directory name
@@ -96,6 +100,8 @@ def collect_mp3info(directory):
         print(".", end="")
         d = dict()
         try:
+            d["hasbadchars"] = False
+
             mp3 = MP3File(file)
             mp3.set_version(VERSION_2)  # we just want to get the v2 tags
             d["tagversion"]="v1"        # We hope tags will be v2, but let's set the worst case for us which is v1, if no v2 tags we will assume all was v1 and will not write
@@ -105,7 +111,9 @@ def collect_mp3info(directory):
                     mp3.set_version(VERSION_1)  # So there was a non-zero v2 tag
                 else:
                     d["tagversion"] = "v2"
-                d["artist"] = mp3.artist.rstrip()
+                d["artist"] = mp3.artist.rstrip(BAD_CHARS)
+                if( mp3.artist != d["artist"]):
+                    d["hasbadchars"] = True
             else:
                 d["artist"] = ""
 
@@ -115,7 +123,9 @@ def collect_mp3info(directory):
                     mp3.set_version(VERSION_1)
                 else:
                     d["tagversion"] = "v2"      # So there was a non-zero v2 tag
-                d["album"] = mp3.album.rstrip()
+                d["album"] = mp3.album.rstrip(BAD_CHARS)
+                if (mp3.album != d["album"]):
+                    d["hasbadchars"] = True
             else:
                 d["album"] = ""
 
@@ -125,7 +135,9 @@ def collect_mp3info(directory):
                     mp3.set_version(VERSION_1)
                 else:
                     d["tagversion"] = "v2"      # So there was a non-zero v2 tag
-                d["song"] = mp3.song.rstrip()
+                d["song"] = mp3.song.rstrip(BAD_CHARS)
+                if (mp3.song != d["song"]):
+                    d["hasbadchars"] = True
             else:
                 d["song"] = ""
 
@@ -135,7 +147,9 @@ def collect_mp3info(directory):
                     mp3.set_version(VERSION_1)
                 else:
                     d["tagversion"] = "v2"      # So there was a non-zero v2 tag
-                d["band"] = mp3.band.rstrip()
+                d["band"] = mp3.band.rstrip(BAD_CHARS)
+                if (mp3.band != d["band"]):
+                    d["hasbadchars"] = True
             else:
                 d["band"] = ""
 
@@ -363,17 +377,18 @@ def update_mp3info(songlist, requiredtag, write_v1_tags=False):
             print("WARNING: Song with V1 tags only: {}".format(song["filename"]))
             #writelogfile("Log: only V1 tag excpetion: {}".format(song["filename"]))
 
-        if (needtosave==True):
+        if needtosave==True :
             try:
                 mp3 = MP3File(song["filename"])
                 mp3.set_version(VERSION_BOTH)
-                mp3.band = requiredtag["band"]
-                mp3.album = requiredtag["album"]
+                mp3.band = requiredtag["band"].rstrip(BAD_CHARS)
+                mp3.album = requiredtag["album"].rstrip(BAD_CHARS)
                 if song["song"] == "":
                     # My TC friend is totally bored sometimes somewhere so he learns stuff like [:-4]
                     mp3.song = os.path.basename(song["filename"])[:-4]
+                    mp3.song = mp3.song.rstrip(BAD_CHARS)
                 if (requiredtag["artist"] != "keep"):
-                    mp3.artist = requiredtag["artist"]
+                    mp3.artist = requiredtag["artist"].rstrip(BAD_CHARS)
                 #print('Writing tags to %s' % song["filename"] )
                 mp3.save()
             except Exception as e:
@@ -381,6 +396,32 @@ def update_mp3info(songlist, requiredtag, write_v1_tags=False):
                 writelogfile("Log: Warning: MP3 tag cannot be saved for file:" + format(song["filename"])+ format(e))
             else:
                 print("Info: MP3 tag updated for file: {}".format(song["filename"]))
+
+def rewrite_songs_with_bad_chars(songlist):
+    """
+        function:	rewrite_songs_with_bad_chars
+        input:	    songlist a directory of mp3 tags
+        output:
+        operation:	writes mp3tags and rstrips again
+        """
+    for song in songlist:
+        if song["hasbadchars"] == True and song["tagversion"] == "v2":
+            try:
+                mp3 = MP3File(song["filename"])
+                mp3.set_version(VERSION_BOTH)
+                mp3.band = song["band"].rstrip(BAD_CHARS)
+                mp3.album = song["album"].rstrip(BAD_CHARS)
+                mp3.song = song["song"].rstrip(BAD_CHARS)
+                mp3.artist = song["artist"].rstrip(BAD_CHARS)
+                mp3.save()
+            except Exception as e:
+                print("Warning: MP3 tag cannot be saved for file: {}. Exception: {}".format(song["filename"], e))
+                writelogfile("Log: Warning: MP3 tag cannot be saved for file:" + format(song["filename"]) + format(e))
+            else:
+                print("Info: MP3 badchars removed for file: {}".format(song["filename"]))
+        elif song["tagversion"] == "v1":
+                writelogfile("ERR V1 BADCHAR: MP3 tag cannot be saved for file:" + format(song["filename"]) + format(e))
+    return
 
 
 def writelogfile(str):
@@ -495,6 +536,8 @@ def process_dir(current_directory):
                     return 1
         else:
             print("Album is consistent")
+            rewrite_songs_with_bad_chars(song_list)
+
 
     return 0
 
@@ -608,9 +651,9 @@ def main(argv):
     walkdir(PATH)
 
 if __name__ == "__main__":
-    #main(sys.argv[1:])
+    main(sys.argv[1:])
 
-    #exit(0)
+    exit(0)
     #songlist = collect_mp3info("Z:\\mp3\\_Magyar\\István a király\\Cd1")
     songlist = collect_mp3info("D:\\temp\\mp3\\Valami Amerika")
     suggestedband, suggestedalbum, suggestedartist = suggest_mostfrequent_mp3info(songlist)
@@ -620,3 +663,4 @@ if __name__ == "__main__":
     requiredtag["album"]="ALBUMM"
     requiredtag["band"]="Banda"
     update_mp3info(songlist, requiredtag)
+    rewrite_songs_with_bad_chars(songlist)
