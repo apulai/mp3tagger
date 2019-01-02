@@ -1,9 +1,8 @@
 import mp3tagger
+import glob
 
-PATH = "PATH="
-Z:\\mp3\\_Magyar\\Valami
-Amerika
-"
+PATH = "Z:\\mp3\\_Magyar\\Valami Amerika"
+
 # PATH="/mnt/backupdsk/mp3/_Magyar""
 
 

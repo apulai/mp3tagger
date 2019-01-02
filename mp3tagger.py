@@ -168,6 +168,8 @@ def remove_bad_chars(song_list):
     for song in song_list:
         ret_song = dict()
 
+        ret_song["hasbadchars"]=False
+
         ret_song["artist"] = song["artist"].rstrip(BAD_CHARS)
         if (ret_song["artist"] != song["artist"]):
             ret_song["hasbadchars"] = True
@@ -183,6 +185,8 @@ def remove_bad_chars(song_list):
         ret_song["band"] = song["band"].rstrip(BAD_CHARS)
         if (ret_song["band"] != song["band"]):
             ret_song["hasbadchars"] = True
+
+        ret_list.append(ret_song)
 
     return ret_list
 
@@ -430,10 +434,18 @@ def rewrite_songs_with_bad_chars(songlist):
                     try:
                         mp3 = MP3File(song["filename"])
                         mp3.set_version(VERSION_BOTH)
+                        del mp3.band
                         mp3.band = song["band"].rstrip(BAD_CHARS)
+
+                        del mp3.album
                         mp3.album = song["album"].rstrip(BAD_CHARS)
+
+                        del mp3.song
                         mp3.song = song["song"].rstrip(BAD_CHARS)
+
+                        del mp3.artist
                         mp3.artist = song["artist"].rstrip(BAD_CHARS)
+
                         mp3.save()
                     except Exception as e:
                         print(
