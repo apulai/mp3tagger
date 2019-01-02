@@ -187,6 +187,7 @@ def remove_bad_chars(song_list):
             ret_song["hasbadchars"] = True
 
         ret_song["tagversion"]=song["tagversion"]
+        ret_song["filename"] = song["filename"]
         ret_list.append(ret_song)
 
     return ret_list
