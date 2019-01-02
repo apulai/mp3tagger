@@ -111,9 +111,7 @@ def collect_mp3info(directory):
                     mp3.set_version(VERSION_1)  # So there was a non-zero v2 tag
                 else:
                     d["tagversion"] = "v2"
-                d["artist"] = mp3.artist.rstrip(BAD_CHARS)
-                if( mp3.artist != d["artist"]):
-                    d["hasbadchars"] = True
+                d["artist"] = mp3.artist.rstrip()
             else:
                 d["artist"] = ""
 
@@ -123,9 +121,7 @@ def collect_mp3info(directory):
                     mp3.set_version(VERSION_1)
                 else:
                     d["tagversion"] = "v2"      # So there was a non-zero v2 tag
-                d["album"] = mp3.album.rstrip(BAD_CHARS)
-                if (mp3.album != d["album"]):
-                    d["hasbadchars"] = True
+                d["album"] = mp3.album.rstrip()
             else:
                 d["album"] = ""
 
@@ -135,9 +131,7 @@ def collect_mp3info(directory):
                     mp3.set_version(VERSION_1)
                 else:
                     d["tagversion"] = "v2"      # So there was a non-zero v2 tag
-                d["song"] = mp3.song.rstrip(BAD_CHARS)
-                if (mp3.song != d["song"]):
-                    d["hasbadchars"] = True
+                d["song"] = mp3.song.rstrip()
             else:
                 d["song"] = ""
 
@@ -147,9 +141,7 @@ def collect_mp3info(directory):
                     mp3.set_version(VERSION_1)
                 else:
                     d["tagversion"] = "v2"      # So there was a non-zero v2 tag
-                d["band"] = mp3.band.rstrip(BAD_CHARS)
-                if (mp3.band != d["band"]):
-                    d["hasbadchars"] = True
+                d["band"] = mp3.band.rstrip()
             else:
                 d["band"] = ""
 
@@ -164,6 +156,35 @@ def collect_mp3info(directory):
 
     return songs_list
 
+def remove_bad_chars(song_list):
+    """
+        function:	remove_bad_chars
+        input:	    song_list
+        output:	    corrected song list
+        operation:	Walks so a song_list collected by collect_mp3info
+                    Tries to remove bad chars we have seen mostly on windows
+        """
+    ret_list = list()
+    for song in song_list:
+        ret_song = dict()
+
+        ret_song["artist"] = song["artist"].rstrip(BAD_CHARS)
+        if (ret_song["artist"] != song["artist"]):
+            ret_song["hasbadchars"] = True
+
+        ret_song["album"] = song["album"].rstrip(BAD_CHARS)
+        if (ret_song["album"] != song["album"]):
+            ret_song["hasbadchars"] = True
+
+        ret_song["song"] = song["song"].rstrip(BAD_CHARS)
+        if (ret_song["song"] != song["song"]):
+            ret_song["hasbadchars"] = True
+
+        ret_song["band"] = song["band"].rstrip(BAD_CHARS)
+        if (ret_song["band"] != song["band"]):
+            ret_song["hasbadchars"] = True
+
+    return ret_list
 
 def is_mp3info_consistent(songs_list):
     """
@@ -217,7 +238,6 @@ def is_mp3info_consistent(songs_list):
     # And all artist is different then we are still OK
 
     if( artist_consistent == False):
-        #print("Double check artist consistency, if album and band is consitent, and artists are all different we can be OK")
         print("Double check artist consistency, if album and band is consitent, and no empty artists are then OK")
         if ( band_consistent == True and album_consistent == True):
             totalnumberofsongs = len(songs_list)
@@ -405,22 +425,28 @@ def rewrite_songs_with_bad_chars(songlist):
         operation:	writes mp3tags and rstrips again
         """
     for song in songlist:
-        if song["hasbadchars"] == True and song["tagversion"] == "v2":
-            try:
-                mp3 = MP3File(song["filename"])
-                mp3.set_version(VERSION_BOTH)
-                mp3.band = song["band"].rstrip(BAD_CHARS)
-                mp3.album = song["album"].rstrip(BAD_CHARS)
-                mp3.song = song["song"].rstrip(BAD_CHARS)
-                mp3.artist = song["artist"].rstrip(BAD_CHARS)
-                mp3.save()
-            except Exception as e:
-                print("Warning: MP3 tag cannot be saved for file: {}. Exception: {}".format(song["filename"], e))
-                writelogfile("Log: Warning: MP3 tag cannot be saved for file:" + format(song["filename"]) + format(e))
-            else:
-                print("Info: MP3 badchars removed for file: {}".format(song["filename"]))
-        elif song["tagversion"] == "v1":
-                writelogfile("ERR V1 BADCHAR: MP3 tag cannot be saved for file:" + format(song["filename"]) + format(e))
+        try:
+                if song["hasbadchars"] == True and song["tagversion"] == "v2":
+                    try:
+                        mp3 = MP3File(song["filename"])
+                        mp3.set_version(VERSION_BOTH)
+                        mp3.band = song["band"].rstrip(BAD_CHARS)
+                        mp3.album = song["album"].rstrip(BAD_CHARS)
+                        mp3.song = song["song"].rstrip(BAD_CHARS)
+                        mp3.artist = song["artist"].rstrip(BAD_CHARS)
+                        mp3.save()
+                    except Exception as e:
+                        print(
+                            "Warning: MP3 tag cannot be saved for file: {}. Exception: {}".format(song["filename"], e))
+                        writelogfile(
+                            "Log: Warning: MP3 tag cannot be saved for file:" + format(song["filename"]) + format(e))
+                    else:
+                        print("Info: MP3 badchars removed for file: {}".format(song["filename"]))
+                elif song["tagversion"] == "v1":
+                    writelogfile(
+                        "ERR V1 BADCHAR: MP3 tag cannot be saved for file:" + format(song["filename"]) + format(e))
+        except NameError:
+            print("Info no bad chars, or not checked")
     return
 
 
@@ -536,7 +562,6 @@ def process_dir(current_directory):
                     return 1
         else:
             print("Album is consistent")
-            rewrite_songs_with_bad_chars(song_list)
 
 
     return 0
